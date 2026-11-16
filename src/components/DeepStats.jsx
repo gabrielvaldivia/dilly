@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { IconArrowRight } from "./Icons.jsx";
 
 /** Stacked vertical bars: player 1 (bottom) vs player 2 (top) per bucket. */
 function StackedBars({ data, ariaLabel }) {
@@ -108,7 +109,7 @@ export function DeepStats({ games, p1Name, p2Name }) {
         </svg>
         <div className="mt-1 flex justify-between text-[10px] font-black tracking-widest">
           <span style={{ color: "var(--p1)" }}>{p1Name.toUpperCase()} — {d.pts1[d.pts1.length - 1]?.[1] ?? 0}</span>
-          <span className="text-[var(--dim)]">GAME 1 → GAME {d.n}</span>
+          <span className="flex items-center gap-1 text-[var(--dim)]">GAME 1 <IconArrowRight className="h-2.5 w-2.5" /> GAME {d.n}</span>
           <span style={{ color: "var(--p2)" }}>{d.pts2[d.pts2.length - 1]?.[1] ?? 0} — {p2Name.toUpperCase()}</span>
         </div>
       </ChartCard>

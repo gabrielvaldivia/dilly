@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { FxText } from "../components/FxText.jsx";
+import { IconCaretDown, IconStar } from "../components/Icons.jsx";
 import { Portrait } from "../components/Portrait.jsx";
+import { beatenUrl } from "../lib/api.js";
+import { ensureBeaten } from "../lib/beaten.js";
 import { pickExcuse } from "../lib/excuses.js";
 import { haptic, sfx } from "../lib/sfx.js";
 
@@ -26,12 +29,12 @@ function useTypewriter(text, active) {
   return { shown: text.slice(0, n), done: n >= text.length, finish: () => setN(text.length) };
 }
 
-function Card({ player, tone, children, className = "" }) {
+function Card({ player, tone, children, className = "", art = null }) {
   return (
     <div className={`tone-${tone} relative aspect-[4/5] w-full ${className}`}>
       <div className="absolute inset-0 overflow-hidden border-[3px] border-black" style={{ transform: "skewX(-6deg)", boxShadow: "0 0 0 3px var(--tone), 0 18px 40px rgba(0,0,0,.6)" }}>
         <div className="absolute inset-[-2px_-10%]" style={{ transform: "skewX(6deg)" }}>
-          <Portrait player={player} eager initialSize="60cqw" />
+          {art ? <img src={art} alt="" draggable={false} className="h-full w-full object-cover" /> : <Portrait player={player} eager initialSize="60cqw" />}
         </div>
         {children}
       </div>
@@ -46,7 +49,7 @@ function DizzyStars() {
       <div className="dizzy-ring">
         {[0, 120, 240].map((a) => (
           <span key={a} className="dizzy-arm" style={{ transform: `rotate(${a}deg)` }}>
-            <span className="dizzy-star">★</span>
+            <span className="dizzy-star"><IconStar className="h-full w-full" /></span>
           </span>
         ))}
       </div>
@@ -68,6 +71,23 @@ export function KOScreen({ winner, loser, side, s1, s2, variant, onRematch, onSe
   const wTone = side === 1 ? "p1" : "p2";
   const lTone = side === 1 ? "p2" : "p1";
   const glow = side === 1 ? "34, 211, 255" : "255, 46, 85";
+
+  // The loser's generated beaten-up portrait. If it isn't ready yet, show
+  // the drawn-on bruises now and swap the art in once it's generated.
+  const [art, setArt] = useState(() => beatenUrl(loser));
+  useEffect(() => {
+    if (art || !loser.photo) return;
+    let live = true;
+    ensureBeaten(loser).then((p) => {
+      const url = p && beatenUrl(p);
+      if (!url || !live) return;
+      const img = new Image();
+      img.onload = () => { if (live) setArt(url); };
+      img.src = url;
+    });
+    return () => { live = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     sfx.ko();
@@ -114,46 +134,34 @@ export function KOScreen({ winner, loser, side, s1, s2, variant, onRematch, onSe
             </div>
           </div>
 
-          {/* The aftermath */}
-          <div className="mt-7 grid w-full max-w-[640px] grid-cols-2 items-end gap-[clamp(16px,5vw,48px)]">
-            <div className="ko-winner-in">
-              <Card player={winner} tone={wTone}>
-                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/70 to-transparent" />
-              </Card>
-              <div className="mt-3 flex items-center justify-center gap-2">
-                <span className="font-hud bg-[var(--accent)] px-2 pb-0.5 pt-1 text-[15px] font-bold text-black" style={{ transform: "skewX(-10deg)" }}>WINNER</span>
-                <span className="font-display truncate text-[20px] leading-none" style={{ color: `var(--${wTone})` }}>{winner.name.toUpperCase()}</span>
-              </div>
-            </div>
-
-            <div className="ko-loser-in">
-              <div className="relative">
-                <DizzyStars />
-                <Card player={loser} tone={lTone} className="ko-beaten">
+          {/* The loser, beaten up — the winner gets the headline, not a portrait. */}
+          <div className="ko-loser-in relative mt-8 w-[min(72vw,40dvh,340px)]">
+            <DizzyStars />
+            <Card player={loser} tone={lTone} className={`ko-beaten ${art ? "has-art" : ""}`} art={art}>
+              {!art && (
+                <>
                   <div className="beat-up pointer-events-none absolute inset-0" />
                   <span className="bandage bandage-a" aria-hidden="true" />
                   <span className="bandage bandage-b" aria-hidden="true" />
                   <svg className="pointer-events-none absolute left-0 top-0 h-1/2 w-1/2 opacity-70" viewBox="0 0 100 100" aria-hidden="true">
                     <path d="M0 18 L22 30 L30 12 L44 34 L60 26 M22 30 L18 52 M44 34 L40 60 L58 74" fill="none" stroke="#fff" strokeWidth="1.6" strokeLinejoin="bevel" />
                   </svg>
-                  <span className="ko-stamp font-display" aria-hidden="true">K.O.</span>
-                </Card>
-              </div>
-              <div className="mt-8 flex items-center justify-center">
-                <span className="font-display truncate text-[20px] leading-none text-white/55">{loser.name.toUpperCase()}</span>
-              </div>
-            </div>
+                </>
+              )}
+              {art && <div key={art} className="shutter-flash pointer-events-none absolute inset-0 bg-white" aria-hidden="true" />}
+              <span className="ko-stamp font-display" aria-hidden="true">K.O.</span>
+            </Card>
           </div>
 
           {/* The excuse */}
-          <div className="fade-up relative mt-8 w-full max-w-[640px]" style={{ animationDelay: ".5s" }}>
+          <div className="fade-up relative mt-10 w-full max-w-[560px]" style={{ animationDelay: ".5s" }}>
             <span className={`tone-${lTone} font-hud absolute -top-3.5 left-4 z-10 px-2.5 pb-0.5 pt-1 text-[16px] font-bold text-black`} style={{ background: "var(--tone)", transform: "skewX(-12deg)" }}>
               {loser.name.toUpperCase()}
             </span>
             <div className="min-h-[96px] border-2 border-white/85 bg-black/80 px-5 pb-4 pt-6 shadow-[0_0_0_2px_#000,0_12px_40px_rgba(0,0,0,.6)]">
               <p className="font-hud text-[clamp(23px,5.6vw,30px)] font-semibold leading-[1.08] text-white">
                 “{typing.shown}{typing.done ? "”" : ""}
-                {typing.done && <span className="blink ml-2 text-[0.7em] text-[var(--accent)]" aria-hidden="true">▼</span>}
+                {typing.done && <span className="blink ml-2 inline-block align-middle text-[var(--accent)]" aria-hidden="true"><IconCaretDown className="h-[0.5em] w-[0.5em]" /></span>}
               </p>
             </div>
           </div>

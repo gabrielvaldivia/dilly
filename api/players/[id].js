@@ -2,6 +2,7 @@ import {
   loadState, saveState, sendJson, readBody, route, routeId, HttpError,
   cleanName, decodePhoto, savePhoto, deletePhoto,
 } from '../_state.js';
+import { generateBeatenInBackground } from '../_beaten.js';
 
 export default route(
   {
@@ -25,7 +26,11 @@ export default route(
       const oldPhoto = player.photo;
       if (photoBytes) player.photo = await savePhoto(id, photoBytes);
       await saveState(state);
-      if (photoBytes) await deletePhoto(id, oldPhoto);
+      if (photoBytes) {
+        await deletePhoto(id, oldPhoto);
+        // New photo → new beaten-up win-screen portrait, made after we've replied.
+        generateBeatenInBackground(id);
+      }
       return sendJson(res, 200, { player });
     },
 

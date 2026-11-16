@@ -50,6 +50,10 @@ function normalizePlayer(p) {
     name,
     createdAt: typeof p.createdAt === 'string' ? p.createdAt : EPOCH,
     photo: Number.isInteger(p.photo) ? p.photo : null,
+    // Photo version the "defeated" portrait was generated from (stale if ≠ photo).
+    beaten: Number.isInteger(p.beaten) ? p.beaten : null,
+    // When generation of that portrait started (ms), while it's in progress.
+    beatenPending: Number.isInteger(p.beatenPending) ? p.beatenPending : null,
   };
 }
 
@@ -111,8 +115,8 @@ export function publicState(state) {
 
 /* ---------------------------- photos ------------------------------ */
 
-export function photoPath(id, version) {
-  return `dilly/players/${id}-${version}.jpg`;
+export function photoPath(id, version, kind = 'photo') {
+  return kind === 'beaten' ? `dilly/players/${id}-${version}-beaten.jpg` : `dilly/players/${id}-${version}.jpg`;
 }
 
 /** Decode a client-sent `data:image/jpeg;base64,…` URL into bytes. */
@@ -137,18 +141,31 @@ export async function savePhoto(id, buf) {
   return version;
 }
 
+/** Store the beaten-up portrait generated from photo `version`. */
+export async function saveBeaten(id, version, buf) {
+  await put(photoPath(id, version, 'beaten'), buf, {
+    access: 'private',
+    addRandomSuffix: false,
+    allowOverwrite: true,
+    contentType: 'image/jpeg',
+  });
+}
+
+/** Remove a photo version and the beaten portrait made from it (best effort). */
 export async function deletePhoto(id, version) {
   if (!Number.isInteger(version)) return;
-  try {
-    await del(photoPath(id, version));
-  } catch (err) {
-    console.error('photo delete failed', err);
+  for (const kind of ['photo', 'beaten']) {
+    try {
+      await del(photoPath(id, version, kind));
+    } catch (err) {
+      if (kind === 'photo') console.error('photo delete failed', err);
+    }
   }
 }
 
-export async function loadPhoto(id, version) {
+export async function loadPhoto(id, version, kind = 'photo') {
   try {
-    const res = await get(photoPath(id, version), { access: 'private' });
+    const res = await get(photoPath(id, version, kind), { access: 'private' });
     if (!res || res.statusCode !== 200 || !res.stream) return null;
     return Buffer.from(await new Response(res.stream).arrayBuffer());
   } catch (err) {

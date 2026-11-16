@@ -1,5 +1,8 @@
 {
   "functions": {
-    "api/stylize.js": { "maxDuration": 120 }
+    "api/stylize.js": { "maxDuration": 120 },
+    "api/beaten/*.js": { "maxDuration": 120 },
+    "api/players.js": { "maxDuration": 120 },
+    "api/players/*.js": { "maxDuration": 120 }
   }
 }

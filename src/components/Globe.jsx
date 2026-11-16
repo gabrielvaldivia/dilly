@@ -1,4 +1,4 @@
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useCardTexture } from "../lib/cardTexture.js";
 
 const RAD = Math.PI / 180;
@@ -108,45 +108,128 @@ function Rig({ children, style }) {
   );
 }
 
+const DEG_PER_PX = 0.4; // drag sensitivity
+const FRICTION = 0.94; // momentum kept per 60fps frame
+const SETTLE_DELAY = 1100; // ms the globe rests where it stopped before returning
+const SETTLE_MS = 900;
+const easeOutBack = (t) => 1 + 2.2 * Math.pow(t - 1, 3) + 1.2 * Math.pow(t - 1, 2);
+
 /**
  * The roster as a 3D globe. The wireframe and the cards are separate 3D
  * layers so the browser never has to depth-sort ring planes against card
- * facets. Drag sideways to spin (springs back); a drag never counts as a tap.
+ * facets. Drag in any direction to spin it freely on both axes (with
+ * momentum); once it comes to rest it eases back to the nearest
+ * front-facing turn so the cards are reachable. A drag never counts as a tap.
  */
 export function Globe({ players, sel, onPick, onAdd }) {
   const stageRef = useRef(null);
   const drag = useRef(null);
   const suppressClick = useRef(false);
+  const rot = useRef({ yaw: 0, pitch: 0, vy: 0, vp: 0, raf: 0, timer: 0 });
   const grid = useMemo(facetGrid, []);
   const { tiles, tw } = useMemo(() => layoutCap(players.length + 1), [players.length]);
 
-  const setYaw = (deg) => {
-    stageRef.current?.querySelectorAll(".globe-rot").forEach((el) => el.style.setProperty("--yaw", `${deg}deg`));
+  useEffect(() => () => { cancelAnimationFrame(rot.current.raf); window.clearTimeout(rot.current.timer); }, []);
+
+  const apply = () => {
+    const { yaw, pitch } = rot.current;
+    stageRef.current?.querySelectorAll(".globe-rot").forEach((el) => {
+      el.style.setProperty("--yaw", `${yaw.toFixed(2)}deg`);
+      el.style.setProperty("--pitch", `${pitch.toFixed(2)}deg`);
+    });
   };
+  const halt = () => {
+    const r = rot.current;
+    cancelAnimationFrame(r.raf);
+    window.clearTimeout(r.timer);
+    r.raf = 0;
+  };
+
+  /** Ease to the nearest whole turn on both axes (i.e. facing front). */
+  const settle = () => {
+    const r = rot.current;
+    const fromY = r.yaw, fromP = r.pitch;
+    const toY = Math.round(fromY / 360) * 360, toP = Math.round(fromP / 360) * 360;
+    if (Math.abs(fromY - toY) < 0.1 && Math.abs(fromP - toP) < 0.1) { r.yaw = 0; r.pitch = 0; apply(); return; }
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const t0 = performance.now();
+    const step = (now) => {
+      const t = reduce ? 1 : Math.min(1, (now - t0) / SETTLE_MS);
+      const e = easeOutBack(t);
+      r.yaw = fromY + (toY - fromY) * e;
+      r.pitch = fromP + (toP - fromP) * e;
+      if (t < 1) { apply(); r.raf = requestAnimationFrame(step); }
+      else { r.yaw = 0; r.pitch = 0; apply(); r.raf = 0; }
+    };
+    r.raf = requestAnimationFrame(step);
+  };
+  const settleSoon = () => {
+    window.clearTimeout(rot.current.timer);
+    rot.current.timer = window.setTimeout(settle, SETTLE_DELAY);
+  };
+
+  /** Let a flick keep spinning, slowing with friction, then rest and return. */
+  const coast = () => {
+    const r = rot.current;
+    let last = performance.now();
+    const step = (now) => {
+      const dt = Math.min(32, now - last);
+      last = now;
+      r.yaw += r.vy * dt;
+      r.pitch += r.vp * dt;
+      const f = Math.pow(FRICTION, dt / 16.7);
+      r.vy *= f;
+      r.vp *= f;
+      apply();
+      if (Math.hypot(r.vy, r.vp) > 0.01) r.raf = requestAnimationFrame(step);
+      else { r.raf = 0; settleSoon(); }
+    };
+    r.raf = requestAnimationFrame(step);
+  };
+
   const onPointerDown = (e) => {
     if (e.button !== 0) return;
-    drag.current = { x: e.clientX, moved: false };
+    halt(); // catch a spinning or returning globe
+    const r = rot.current;
+    drag.current = { x: e.clientX, y: e.clientY, yaw: r.yaw, pitch: r.pitch, moved: false, samples: [] };
   };
   const onPointerMove = (e) => {
     const d = drag.current;
     if (!d) return;
     const dx = e.clientX - d.x;
+    const dy = e.clientY - d.y;
     if (!d.moved) {
-      if (Math.abs(dx) < 8) return;
+      if (Math.hypot(dx, dy) < 8) return;
       d.moved = true;
-      stageRef.current?.classList.add("is-dragging");
       try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* already released */ }
     }
-    setYaw(Math.max(-70, Math.min(70, dx * 0.4)));
+    const r = rot.current;
+    r.yaw = d.yaw + dx * DEG_PER_PX;
+    r.pitch = d.pitch - dy * DEG_PER_PX;
+    const now = performance.now();
+    d.samples.push({ t: now, yaw: r.yaw, pitch: r.pitch });
+    while (d.samples.length > 2 && now - d.samples[0].t > 90) d.samples.shift();
+    apply();
   };
   const endDrag = () => {
     const d = drag.current;
     drag.current = null;
-    if (!d?.moved) return;
+    if (!d) return;
+    const r = rot.current;
+    if (!d.moved) {
+      // A tap: if it interrupted a spin or return, finish returning.
+      if (r.yaw % 360 !== 0 || r.pitch % 360 !== 0) settleSoon();
+      return;
+    }
     suppressClick.current = true;
     window.setTimeout(() => { suppressClick.current = false; }, 0);
-    stageRef.current?.classList.remove("is-dragging");
-    setYaw(0);
+    const a = d.samples[0], b = d.samples[d.samples.length - 1];
+    const dt = b && a ? b.t - a.t : 0;
+    const cap = (v) => Math.max(-2, Math.min(2, v));
+    r.vy = dt > 0 ? cap((b.yaw - a.yaw) / dt) : 0;
+    r.vp = dt > 0 ? cap((b.pitch - a.pitch) / dt) : 0;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) { r.vy = 0; r.vp = 0; }
+    coast();
   };
 
   return (

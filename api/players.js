@@ -3,6 +3,7 @@ import {
   loadState, saveState, sendJson, readBody, route, HttpError,
   cleanName, decodePhoto, savePhoto, ROSTER_MAX,
 } from './_state.js';
+import { generateBeatenInBackground } from './_beaten.js';
 
 export default route(
   {
@@ -19,9 +20,11 @@ export default route(
 
       const id = randomUUID();
       const photo = photoBytes ? await savePhoto(id, photoBytes) : null;
-      const player = { id, name, createdAt: new Date().toISOString(), photo };
+      const player = { id, name, createdAt: new Date().toISOString(), photo, beaten: null, beatenPending: null };
       state.players.push(player);
       await saveState(state);
+      // Their beaten-up win-screen portrait, made after we've replied.
+      if (photo) generateBeatenInBackground(id);
       return sendJson(res, 201, { player });
     },
   },

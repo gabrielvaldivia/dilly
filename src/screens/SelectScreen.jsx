@@ -38,7 +38,20 @@ function PreviewPanel({ side, player, record, active, slamKey, onFocus, onEdit }
             </div>
           )}
           <div className="pointer-events-none absolute inset-0" style={{ background: "linear-gradient(to top, var(--tone-deep) 0%, rgba(0,0,0,.25) 38%, transparent 60%)" }} />
-          <div className="pointer-events-none absolute inset-0" style={{ boxShadow: "inset 0 0 0 3px var(--tone), inset 0 0 40px color-mix(in srgb, var(--tone) 45%, transparent)" }} />
+          <div className="pointer-events-none absolute inset-0" style={{ boxShadow: "inset 0 0 40px color-mix(in srgb, var(--tone) 45%, transparent)" }} />
+          {/* Border traced on the same slanted outline as the clip, so it runs
+              along the angled edge too. The outer half of the stroke is
+              clipped away, leaving a 3px line inside the shape. */}
+          <svg className="pointer-events-none absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+            <polygon
+              points={isP1 ? "0,0 100,0 88,100 0,100" : "0,0 100,0 100,100 12,100"}
+              fill="none"
+              strokeWidth="6"
+              strokeLinejoin="miter"
+              vectorEffect="non-scaling-stroke"
+              style={{ stroke: "var(--tone)" }}
+            />
+          </svg>
           {player && (
             <div className={`absolute bottom-2 ${isP1 ? "left-2 text-left" : "right-2 text-right"} max-w-[92%]`}>
               <FxText tone={side} style={{ fontSize: nameSize(player.name) }}>{player.name}</FxText>
@@ -114,7 +127,7 @@ export function SelectScreen({ index, sel, setSel, onFight, onAdd, onEdit, onRec
   };
 
   return (
-    <div className="no-select relative z-10 mx-auto flex min-h-dvh w-full max-w-[560px] flex-col px-4 pt-[calc(env(safe-area-inset-top)+10px)] lg:max-w-[1440px] lg:px-8">
+    <div className="no-select relative z-10 mx-auto flex h-dvh w-full max-w-[560px] flex-col overflow-y-clip px-4 pt-[calc(env(safe-area-inset-top)+8px)] lg:max-w-[1440px] lg:px-8">
       {/* Top bar */}
       <header className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
         <div className="justify-self-start">
@@ -132,7 +145,7 @@ export function SelectScreen({ index, sel, setSel, onFight, onAdd, onEdit, onRec
           </button>
         </div>
         <div className="flex flex-col items-center">
-          <FxText className="text-[clamp(46px,13vw,68px)]" glow="#ff8a1f">Dilly</FxText>
+          <FxText className="text-[clamp(36px,min(12vw,6.4dvh),68px)]" glow="#ff8a1f">Dilly</FxText>
           <span className="brand-plate relative z-10 -mt-[6px]">
             <span className="font-hud block whitespace-nowrap text-[clamp(13px,3.6vw,17px)] font-bold tracking-[0.22em] text-white">PICKLEBALL FIGHTERS</span>
           </span>
@@ -144,7 +157,7 @@ export function SelectScreen({ index, sel, setSel, onFight, onAdd, onEdit, onRec
         </div>
       </header>
 
-      <div className="select-layout mt-5 flex-1 lg:mt-2">
+      <div className="select-layout mt-4 min-h-0 flex-1 lg:mt-2">
         <section aria-label="Player 1" className="select-panel [grid-area:p1]">
           <PreviewPanel side="p1" player={p1} record={rec1} active={active === "p1"} slamKey={slam.p1} onFocus={() => focusSide("p1")} onEdit={() => p1 && onEdit(p1)} />
         </section>
@@ -160,7 +173,7 @@ export function SelectScreen({ index, sel, setSel, onFight, onAdd, onEdit, onRec
           )}
         </div>
 
-        <section aria-label="Roster" className="flex flex-col items-center [grid-area:globe]">
+        <section aria-label="Roster" className="globe-cell [grid-area:globe]">
           <Globe players={players} sel={sel} onPick={pick} onAdd={() => { sfx.move(); onAdd(active); }} />
         </section>
 
@@ -170,17 +183,16 @@ export function SelectScreen({ index, sel, setSel, onFight, onAdd, onEdit, onRec
       </div>
 
       {/* Fight */}
-      <div className="sticky bottom-0 mt-auto pb-[calc(env(safe-area-inset-bottom)+14px)] pt-5">
-        <div className="pointer-events-none absolute inset-y-0 left-1/2 w-screen -translate-x-1/2 bg-gradient-to-t from-[var(--bg)] via-[var(--bg)]/85 to-transparent" aria-hidden="true" />
+      <div className="relative shrink-0 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3">
         <div key={denied} className={`relative mx-auto w-full max-w-[560px] ${ready ? "fight-ready" : ""} ${denied ? "deny-shake" : ""}`}>
           <button
             type="button"
             onClick={fight}
             aria-disabled={!ready}
-            className={`slant-btn block w-full py-3 active:scale-[0.98] ${ready ? "bg-gradient-to-b from-[#fff3a0] via-[#ffc02e] to-[#ff5a1f]" : "bg-white/10"}`}
+            className={`slant-btn block w-full py-[clamp(8px,1.4dvh,12px)] active:scale-[0.98] ${ready ? "bg-gradient-to-b from-[#fff3a0] via-[#ffc02e] to-[#ff5a1f]" : "bg-white/10"}`}
             style={{ "--slant": "22px" }}
           >
-            <span className={`font-display block text-[38px] leading-none tracking-wide ${ready ? "text-[var(--ink)]" : "text-white/35"}`} style={{ transform: "skewX(-9deg)" }}>
+            <span className={`font-display block text-[clamp(30px,4.6dvh,38px)] leading-none tracking-wide ${ready ? "text-[var(--ink)]" : "text-white/35"}`} style={{ transform: "skewX(-9deg)" }}>
               FIGHT!
             </span>
           </button>

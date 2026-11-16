@@ -32,3 +32,25 @@ Photorealism, smooth digital airbrushing, 3D rendering, plastic skin, soft water
 
 OUTPUT
 One finished, high-quality, square arcade character portrait with no text or watermark.`;
+
+// Turns a fighter's arcade portrait into their beaten-up "defeated"
+// portrait for the win screen. Generated once per portrait.
+export const BEATEN_PROMPT = `Redraw this arcade fighting-game character portrait as the character's "defeated" portrait, the kind shown on a classic 1990s arcade fighting game's results screen after they lose.
+
+KEEP EXACTLY
+- The same person: face, identity, skin tone, hair, facial hair, and age.
+- The same illustration style: bold black ink outlines, angular cel shading, halftone texture, saturated colors.
+- The same clothing, framing, camera angle, and diagonal streak background.
+
+SHOW THEM BEATEN UP, CARTOON STYLE
+- A swollen black eye and a few bruises and scrapes on the face.
+- One or two adhesive bandages on the face or forehead.
+- Messy, disheveled hair and sweat drops.
+- A dazed, exhausted, slightly embarrassed expression.
+- Slightly rumpled or torn clothing.
+
+KEEP IT FUN
+Comedic and cartoonish, like a video game knockout. No blood, no gore, no open wounds, nothing graphic.
+
+OUTPUT
+One square portrait in the same style, with no text, logos, borders, or UI.`;

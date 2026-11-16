@@ -121,8 +121,9 @@ function drawAdd(g) {
   g.fillStyle = "#ffd23f";
   g.textAlign = "center";
   g.textBaseline = "middle";
-  g.font = `${Math.round(W * 0.5)}px Anton, Impact, sans-serif`;
-  g.fillText("+", W / 2, H * 0.42);
+  const len = W * 0.34, bar = W * 0.085, cx = W / 2, cy = H * 0.42;
+  g.fillRect(cx - bar / 2, cy - len / 2, bar, len);
+  g.fillRect(cx - len / 2, cy - bar / 2, len, bar);
   g.font = "600 64px Teko, 'Arial Narrow', sans-serif";
   g.fillText("NEW", W / 2, H * 0.74);
 }

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { FxText } from "../components/FxText.jsx";
+import { IconClose } from "../components/Icons.jsx";
 import { Portrait } from "../components/Portrait.jsx";
 import { apiFetch, photoUrl } from "../lib/api.js";
 import { haptic, sfx } from "../lib/sfx.js";
@@ -236,8 +237,8 @@ export function FighterSheet({ mode, player, gameCount = 0, onClose, onSaved, on
             <p className="font-hud text-[16px] font-semibold text-[var(--accent)] blink">{isEdit ? "FIGHTER PROFILE" : "WARNING"}</p>
             <FxText className="mt-1 text-[clamp(30px,10vw,44px)]">{isEdit ? "Edit fighter" : "New challenger!"}</FxText>
           </div>
-          <button type="button" onClick={onClose} aria-label="Close" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-white/15 bg-black/50 text-2xl font-bold active:scale-95">
-            ×
+          <button type="button" onClick={onClose} aria-label="Close" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-white/15 bg-black/50 active:scale-95">
+            <IconClose className="h-5 w-5" />
           </button>
         </div>
 

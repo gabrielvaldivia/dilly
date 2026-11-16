@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { DeepStats } from "../components/DeepStats.jsx";
 import { FxText } from "../components/FxText.jsx";
+import { IconBack, IconChevronDown, IconPlus } from "../components/Icons.jsx";
 import { Portrait } from "../components/Portrait.jsx";
 import { headToHead, leaderboard, matchupGames, rivalries } from "../lib/stats.js";
 
@@ -68,8 +69,8 @@ function Rankings({ index, onEdit, onAdd }) {
           </button>
         );
       })}
-      <button type="button" onClick={onAdd} className="font-hud mt-1 rounded-sm border-2 border-dashed border-[var(--accent)]/70 py-3 pt-4 text-[20px] font-semibold text-[var(--accent)] active:scale-[0.99]">
-        + ADD A FIGHTER
+      <button type="button" onClick={onAdd} className="font-hud mt-1 flex items-center justify-center gap-2 rounded-sm border-2 border-dashed border-[var(--accent)]/70 py-3 pt-4 text-[20px] font-semibold text-[var(--accent)] active:scale-[0.99]">
+        <IconPlus className="-mt-1 h-4 w-4" /> ADD A FIGHTER
       </button>
     </div>
   );
@@ -121,7 +122,7 @@ function Rivalries({ index, sel }) {
                     <div className="h-full flex-1" style={{ background: "var(--p2)" }} />
                   </div>
                   <div className="font-hud mt-1.5 text-center text-[14px] font-semibold text-white/50">
-                    {h.total} GAME{h.total === 1 ? "" : "S"} <span aria-hidden="true" className="ml-1 inline-block transition-transform" style={{ transform: isOpen ? "rotate(180deg)" : "none" }}>▾</span>
+                    {h.total} GAME{h.total === 1 ? "" : "S"} <span aria-hidden="true" className="ml-1 inline-block align-[-1px] transition-transform" style={{ transform: isOpen ? "rotate(180deg)" : "none" }}><IconChevronDown className="h-3 w-3" /></span>
                   </div>
                 </div>
                 <Face player={b} tone="p2" className="h-[58px] w-[46px]" />
@@ -203,8 +204,8 @@ export function RecordsScreen({ index, sel, onBack, onEdit, onAdd, onDeleteGame 
   return (
     <div className="no-select relative z-10 mx-auto flex min-h-dvh w-full max-w-[560px] flex-col px-4 pb-[calc(env(safe-area-inset-bottom)+24px)] pt-[calc(env(safe-area-inset-top)+10px)]">
       <header className="flex items-center justify-between gap-3">
-        <button type="button" onClick={onBack} className="font-hud slant-btn bg-white/12 px-4 pb-1 pt-2.5 text-[19px] font-semibold active:scale-95">
-          ◀ SELECT
+        <button type="button" onClick={onBack} className="font-hud slant-btn flex items-center gap-1.5 bg-white/12 px-4 pb-1 pt-2.5 text-[19px] font-semibold active:scale-95">
+          <IconBack className="-mt-1 h-4 w-4" /> SELECT
         </button>
         <span className="font-hud text-[16px] font-semibold text-white/55">
           {index.games.length} GAME{index.games.length === 1 ? "" : "S"} · {index.players.length} FIGHTERS
