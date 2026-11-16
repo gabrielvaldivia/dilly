@@ -183,7 +183,7 @@ export function SelectScreen({ index, sel, setSel, onFight, onAdd, onEdit, onRec
       </div>
 
       {/* Fight */}
-      <div className="relative shrink-0 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3">
+      <div className="relative z-20 shrink-0 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3">
         <div key={denied} className={`relative mx-auto w-full max-w-[560px] ${ready ? "fight-ready" : ""} ${denied ? "deny-shake" : ""}`}>
           <button
             type="button"

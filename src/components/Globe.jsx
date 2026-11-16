@@ -201,7 +201,7 @@ export function Globe({ players, sel, onPick, onAdd }) {
     if (!d.moved) {
       if (Math.hypot(dx, dy) < 8) return;
       d.moved = true;
-      try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* already released */ }
+      try { e.target.setPointerCapture(e.pointerId); } catch { /* already released */ }
     }
     const r = rot.current;
     r.yaw = d.yaw + dx * DEG_PER_PX;
@@ -243,6 +243,7 @@ export function Globe({ players, sel, onPick, onAdd }) {
         onPointerCancel={endDrag}
         onClickCapture={(e) => { if (suppressClick.current) { e.stopPropagation(); e.preventDefault(); } }}
       >
+        <div className="globe-hit" aria-hidden="true" />
         <div className="globe-core" aria-hidden="true" />
         <div className="globe-base" aria-hidden="true" />
 

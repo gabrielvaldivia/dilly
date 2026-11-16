@@ -312,6 +312,15 @@ button { touch-action: manipulation; }
 .select-layout { display: grid; grid-template-columns: 1fr 44px 1fr; grid-template-rows: minmax(0, 38fr) minmax(0, 62fr); grid-template-areas: "p1 vs p2" "globe globe globe"; column-gap: 4px; row-gap: 8px; align-items: stretch; }
 .select-panel { height: 100%; min-height: 0; }
 .globe-cell { container-type: size; min-height: 0; display: flex; align-items: center; justify-content: center; }
+/* Phones: panels get a bit more height and the globe cell reaches past its
+   row — to the screen edges, a little up over the panels and further down
+   behind FIGHT — so a bigger globe overlaps both. It draws above the panels;
+   the FIGHT bar draws above it. */
+@media (max-width: 1023px) {
+  .select-layout { grid-template-rows: minmax(0, 52fr) minmax(0, 48fr); }
+  .globe-cell { position: relative; z-index: 10; margin: 0 -16px; }
+  .globe-wrap { top: 8px; }
+}
 @media (min-width: 1024px) {
   .select-layout { grid-template-columns: minmax(220px, 320px) minmax(0, 1fr) minmax(220px, 320px); grid-template-rows: minmax(0, 1fr); grid-template-areas: "p1 globe p2"; column-gap: 28px; align-items: center; }
   .select-panel { height: min(66vh, 620px); }
@@ -325,10 +334,14 @@ button { touch-action: manipulation; }
 /* Sizes derive from --D (diameter) so one layout scales everywhere.    */
 /* No filter/opacity on the 3D groups — that would flatten them.        */
 /* ------------------------------------------------------------------ */
-.globe-wrap { --D: min(88cqw, 86cqh, 400px); --R: calc(var(--D) / 2); position: relative; width: var(--D); margin-bottom: calc(var(--D) * 0.08); }
-@media (min-width: 1024px) { .globe-wrap { --D: min(92cqw, 84cqh, 640px); } }
-.globe-stage { position: relative; width: var(--D); height: var(--D); touch-action: none; cursor: grab; }
-.globe-stage:active { cursor: grabbing; }
+/* Up to 64px taller than its row on phones, so it spills over both edges. */
+.globe-wrap { --D: min(96cqw, calc(100cqh + 64px), 440px); --R: calc(var(--D) / 2); position: relative; width: var(--D); pointer-events: none; }
+@media (min-width: 1024px) { .globe-wrap { --D: min(92cqw, 84cqh, 640px); margin-bottom: calc(var(--D) * 0.08); } }
+/* Only the round globe takes touches (its square box's corners overlap the
+   panels on phones); cards opt back in. Events still bubble to the stage. */
+.globe-stage { position: relative; width: var(--D); height: var(--D); pointer-events: none; }
+.globe-hit { position: absolute; inset: 1%; border-radius: 9999px; pointer-events: auto; touch-action: none; cursor: grab; }
+.globe-hit:active { cursor: grabbing; }
 .globe-layer { position: absolute; inset: 0; perspective: calc(var(--D) * 2.4); perspective-origin: 50% 42%; pointer-events: none; }
 .globe-layer .gtile { pointer-events: auto; }
 .globe-3d { position: absolute; inset: 0; transform-style: preserve-3d; }
