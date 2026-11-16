@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 
-const COLORS = ["#c6f135", "#39d0ff", "#ff5a3c", "#f4f7ee", "#ffd23c"];
+const COLORS = ["#ffd23f", "#22d3ff", "#ff2e55", "#ffffff", "#ff7a1a"];
 
 /** Canvas confetti. Fire by changing `fireKey`.
  *  intensity 1 = the standard two-cannon burst.
