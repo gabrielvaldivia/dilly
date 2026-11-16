@@ -17,7 +17,12 @@ function facetGrid() {
  * more tiles (like a globe), tile spacing stays even along each row, and
  * everything is relative to the radius so CSS can size it.
  */
-function layoutCap(n) {
+/** Largest card size (arc / radius). Desktop globes are big, so cards stay smaller there. */
+function maxCardArc() {
+  return typeof window !== "undefined" && window.matchMedia("(min-width: 1024px)").matches ? 0.36 : 0.5;
+}
+
+function layoutCap(n, maxTw = 0.5) {
   const rows = n <= 3 ? 1 : n <= 8 ? 2 : n <= 15 ? 3 : n <= 24 ? 4 : n <= 35 ? 5 : 6;
   const prov = Array.from({ length: rows }, (_, i) => (i - (rows - 1) / 2) * 24);
   const weights = prov.map((l) => Math.cos(l * RAD));
@@ -35,7 +40,7 @@ function layoutCap(n) {
   const maxCount = Math.max(...counts);
   const span = 128 * RAD;
   const vspan = 120 * RAD;
-  const tw = Math.min(0.5, (span - (maxCount - 1) * GAP) / maxCount, (vspan - (rows - 1) * GAP) / (rows * 1.25));
+  const tw = Math.min(maxTw, (span - (maxCount - 1) * GAP) / maxCount, (vspan - (rows - 1) * GAP) / (rows * 1.25));
   const latStep = (tw * 1.25 + GAP) / RAD;
   const tiles = [];
   counts.forEach((c, r) => {
@@ -127,7 +132,7 @@ export function Globe({ players, sel, onPick, onAdd }) {
   const suppressClick = useRef(false);
   const rot = useRef({ yaw: 0, pitch: 0, vy: 0, vp: 0, raf: 0, timer: 0 });
   const grid = useMemo(facetGrid, []);
-  const { tiles, tw } = useMemo(() => layoutCap(players.length + 1), [players.length]);
+  const { tiles, tw } = useMemo(() => layoutCap(players.length + 1, maxCardArc()), [players.length]);
 
   useEffect(() => () => { cancelAnimationFrame(rot.current.raf); window.clearTimeout(rot.current.timer); }, []);
 

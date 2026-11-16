@@ -15,11 +15,14 @@ function PreviewPanel({ side, player, record, active, slamKey, onFocus, onEdit }
   const isP1 = side === "p1";
   return (
     <div className={`tone-${side} relative h-full`} style={{ containerType: "inline-size" }}>
+      {/* The tilted panel. The 1P/2P badge and EDIT live inside it so they
+          turn with the panel instead of floating off its edges. */}
+      <div className={`preview preview-${side} relative h-full w-full ${active ? "panel-focus" : ""}`}>
       <button
         type="button"
         onClick={onFocus}
         aria-label={player ? `${SIDE_LABEL[side]}: ${player.name}` : `${SIDE_LABEL[side]}: empty`}
-        className={`preview preview-${side} block h-full w-full ${active ? "panel-focus" : ""}`}
+        className="block h-full w-full"
       >
         <div
           key={slamKey}
@@ -73,11 +76,12 @@ function PreviewPanel({ side, player, record, active, slamKey, onFocus, onEdit }
           type="button"
           onClick={onEdit}
           aria-label={`Edit ${player.name}`}
-          className={`font-hud absolute top-2 ${isP1 ? "right-[16%]" : "left-[16%]"} rounded-sm bg-black/60 px-2 pb-0.5 pt-1 text-[14px] font-semibold text-white/85 active:scale-95`}
+          className={`font-hud absolute top-3 z-10 ${isP1 ? "right-3" : "left-3"} rounded-sm bg-black/60 px-2 pb-0.5 pt-1 text-[14px] font-semibold text-white/85 active:scale-95`}
         >
           EDIT
         </button>
       )}
+      </div>
     </div>
   );
 }
@@ -129,7 +133,7 @@ export function SelectScreen({ index, sel, setSel, onFight, onAdd, onEdit, onRec
   return (
     <div className="no-select relative z-10 mx-auto flex h-dvh w-full max-w-[560px] flex-col overflow-y-clip px-4 pt-[calc(env(safe-area-inset-top)+8px)] lg:max-w-[1440px] lg:px-8">
       {/* Top bar */}
-      <header className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+      <header className="relative z-10 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
         <div className="justify-self-start">
           <button
             type="button"

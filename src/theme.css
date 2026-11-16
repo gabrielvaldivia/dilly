@@ -323,8 +323,9 @@ button { touch-action: manipulation; }
 }
 @media (min-width: 1024px) {
   .select-layout { grid-template-columns: minmax(220px, 320px) minmax(0, 1fr) minmax(220px, 320px); grid-template-rows: minmax(0, 1fr); grid-template-areas: "p1 globe p2"; column-gap: 28px; align-items: center; }
-  .select-panel { height: min(66vh, 620px); }
-  .globe-cell { align-self: stretch; }
+  /* Desktop: the globe tucks behind the portraits (and header), which sit on top. */
+  .select-panel { height: min(66vh, 620px); position: relative; z-index: 10; }
+  .globe-cell { position: relative; z-index: 0; align-self: stretch; }
   .preview-p1 { transform: perspective(1100px) rotateY(calc(24deg + var(--px) * 6deg)) rotateX(calc(var(--py) * -4deg)); }
   .preview-p2 { transform: perspective(1100px) rotateY(calc(-24deg + var(--px) * 6deg)) rotateX(calc(var(--py) * -4deg)); }
 }
@@ -336,7 +337,9 @@ button { touch-action: manipulation; }
 /* ------------------------------------------------------------------ */
 /* Up to 64px taller than its row on phones, so it spills over both edges. */
 .globe-wrap { --D: min(96cqw, calc(100cqh + 64px), 440px); --R: calc(var(--D) / 2); position: relative; width: var(--D); pointer-events: none; }
-@media (min-width: 1024px) { .globe-wrap { --D: min(92cqw, 84cqh, 640px); margin-bottom: calc(var(--D) * 0.08); } }
+/* Desktop: wider than its column so it reaches behind the portraits and up
+   to 80px taller than its row; the cards stay clear of FIGHT. */
+@media (min-width: 1024px) { .globe-wrap { --D: min(135cqw, calc(100cqh + 80px), 920px); top: 4px; } }
 /* Only the round globe takes touches (its square box's corners overlap the
    panels on phones); cards opt back in. Events still bubble to the stage. */
 .globe-stage { position: relative; width: var(--D); height: var(--D); pointer-events: none; }
