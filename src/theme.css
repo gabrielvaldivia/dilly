@@ -414,17 +414,19 @@ button { touch-action: manipulation; }
 .ko-stamp { position: absolute; right: 6%; bottom: 6%; padding: 2px 10px 0; font-size: clamp(22px, 6vw, 36px); line-height: 1; color: #ff2e55;
   border: 3px solid #ff2e55; transform: rotate(-14deg); background: rgba(0, 0, 0, .35); text-shadow: 0 2px 0 #000; }
 /* Dizzy stars: an ellipse (squashed ring) whose stars are counter-rotated to stay upright. */
-.dizzy-ring { position: absolute; left: 0; top: 0; width: 0; height: 0; transform: scaleY(.38); }
-.dizzy-arm { position: absolute; left: 0; top: 0; width: 0; height: 0; animation: dizzy-spin 2.4s linear infinite; }
-.dizzy-arm:nth-child(2) { animation-delay: -.8s; }
-.dizzy-arm:nth-child(3) { animation-delay: -1.6s; }
-.dizzy-star { position: absolute; left: clamp(36px, 11vw, 70px); top: -12px; display: block; width: clamp(16px, 4.5vw, 24px); height: clamp(16px, 4.5vw, 24px); color: #ffd23f;
-  filter: drop-shadow(0 0 5px rgba(255, 190, 40, .9)); transform: scaleY(2.63); animation: dizzy-unspin 2.4s linear infinite; }
-.dizzy-arm:nth-child(2) .dizzy-star { animation-delay: -.8s; }
-.dizzy-arm:nth-child(3) .dizzy-star { animation-delay: -1.6s; }
-@keyframes dizzy-spin { to { transform: rotate(360deg); } }
-@keyframes dizzy-unspin { from { transform: rotate(0deg) scaleY(2.63); } to { transform: rotate(-360deg) scaleY(2.63); } }
-@media (prefers-reduced-motion: reduce) { .dizzy-arm, .dizzy-star, .ko-winner-in, .ko-loser-in { animation: none !important; } }
+/* The card area is a size container: the loser card (--card-w) takes the
+   largest 4:5 size that fits between the headline and the caption. */
+.ko-card-area { container-type: size; }
+/* Dizzy stars: an x loop and a y loop a quarter-cycle apart trace an ellipse;
+   nothing rotates, so stars stay upright. Bigger on the near side. */
+.dizzy-x, .dizzy-y { position: absolute; left: 0; top: 0; width: 0; height: 0; }
+.dizzy-x { animation: dizzy-x 1.3s ease-in-out infinite alternate; }
+.dizzy-y { animation: dizzy-y 1.3s ease-in-out infinite alternate; }
+@keyframes dizzy-x { from { transform: translateX(calc(var(--card-w) * -0.3)); } to { transform: translateX(calc(var(--card-w) * 0.3)); } }
+@keyframes dizzy-y { from { transform: translateY(calc(var(--card-w) * -0.06)) scale(.72); } to { transform: translateY(calc(var(--card-w) * 0.06)) scale(1.12); } }
+.dizzy-star { position: absolute; left: 0; top: 0; width: clamp(18px, calc(var(--card-w) * 0.085), 30px); height: clamp(18px, calc(var(--card-w) * 0.085), 30px);
+  transform: translate(-50%, -50%); color: #ffd23f; filter: drop-shadow(0 0 4px rgba(255, 190, 40, .95)) drop-shadow(0 2px 0 rgba(0, 0, 0, .6)); }
+@media (prefers-reduced-motion: reduce) { .dizzy-x, .dizzy-y, .ko-winner-in, .ko-loser-in { animation: none !important; } }
 
 /* Portrait generation: a scan band sweeping the photo and a bar that eases
    toward ~90% over the typical generation time, then waits. */

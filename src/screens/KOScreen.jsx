@@ -42,17 +42,24 @@ function Card({ player, tone, children, className = "", art = null }) {
   );
 }
 
-/** Stars circling the loser's head — a squashed ring, stars kept upright. */
+const DIZZY_LOOP = 2.6; // seconds per orbit
+
+/**
+ * Stars circling the loser's head, drawn in front of the card. Each star
+ * slides side to side and up/down on two eased loops a quarter-turn apart,
+ * which traces an ellipse without ever rotating the star — so they stay
+ * upright and are a touch bigger on the near side of the orbit.
+ */
 function DizzyStars() {
   return (
-    <div className="dizzy pointer-events-none absolute left-1/2 top-[2%] h-0 w-0" aria-hidden="true">
-      <div className="dizzy-ring">
-        {[0, 120, 240].map((a) => (
-          <span key={a} className="dizzy-arm" style={{ transform: `rotate(${a}deg)` }}>
-            <span className="dizzy-star"><IconStar className="h-full w-full" /></span>
+    <div className="pointer-events-none absolute left-1/2 top-[7%] z-20 h-0 w-0" aria-hidden="true">
+      {[0, 1, 2].map((i) => (
+        <span key={i} className="dizzy-x" style={{ animationDelay: `${(-i * DIZZY_LOOP) / 3}s` }}>
+          <span className="dizzy-y" style={{ animationDelay: `${(-i * DIZZY_LOOP) / 3 - DIZZY_LOOP / 4}s` }}>
+            <IconStar className="dizzy-star" />
           </span>
-        ))}
-      </div>
+        </span>
+      ))}
     </div>
   );
 }
@@ -104,7 +111,7 @@ export function KOScreen({ winner, loser, side, s1, s2, variant, onRematch, onSe
 
   return (
     <div
-      className="no-select fixed inset-0 z-50 overflow-y-auto overflow-x-hidden"
+      className="no-select fixed inset-x-0 top-0 z-50 h-dvh overflow-hidden"
       style={{ background: `radial-gradient(80% 60% at 28% 30%, rgba(${glow}, .18), transparent 65%), linear-gradient(180deg, rgba(8,5,18,.94), rgba(4,2,10,.97))` }}
       role="dialog"
       aria-modal="true"
@@ -122,9 +129,9 @@ export function KOScreen({ winner, loser, side, s1, s2, variant, onRematch, onSe
       )}
 
       {reveal && (
-        <div className="relative mx-auto flex min-h-full w-full max-w-[860px] flex-col items-center justify-center px-5 pb-[calc(env(safe-area-inset-bottom)+20px)] pt-[calc(env(safe-area-inset-top)+22px)]">
+        <div className="relative mx-auto flex h-full w-full max-w-[860px] flex-col items-center px-5 pb-[calc(env(safe-area-inset-bottom)+14px)] pt-[calc(env(safe-area-inset-top)+14px)]">
           {/* Result */}
-          <div className="fade-up flex flex-col items-center text-center">
+          <div className="fade-up flex shrink-0 flex-col items-center text-center">
             <FxText tone={wTone} style={{ fontSize: `min(${Math.min(14, 140 / (winner.name.length + 5))}vw, 64px)` }}>{winner.name} wins</FxText>
             <div className="mt-2 flex items-center gap-3">
               <span className="font-display text-[clamp(34px,9vw,48px)] leading-none text-[var(--accent)]" style={{ textShadow: "0 3px 0 #000" }}>
@@ -135,8 +142,8 @@ export function KOScreen({ winner, loser, side, s1, s2, variant, onRematch, onSe
           </div>
 
           {/* The loser, beaten up — the winner gets the headline, not a portrait. */}
-          <div className="ko-loser-in relative mt-8 w-[min(72vw,40dvh,340px)]">
-            <DizzyStars />
+          <div className="ko-card-area relative flex min-h-0 w-full flex-1 items-center justify-center py-4">
+          <div className="ko-loser-in relative" style={{ "--card-w": "min(78cqw, 66cqh, 340px)", width: "var(--card-w)" }}>
             <Card player={loser} tone={lTone} className={`ko-beaten ${art ? "has-art" : ""}`} art={art}>
               {!art && (
                 <>
@@ -151,15 +158,17 @@ export function KOScreen({ winner, loser, side, s1, s2, variant, onRematch, onSe
               {art && <div key={art} className="shutter-flash pointer-events-none absolute inset-0 bg-white" aria-hidden="true" />}
               <span className="ko-stamp font-display" aria-hidden="true">K.O.</span>
             </Card>
+            <DizzyStars />
+          </div>
           </div>
 
           {/* The excuse */}
-          <div className="fade-up relative mt-10 w-full max-w-[560px]" style={{ animationDelay: ".5s" }}>
+          <div className="fade-up relative mt-3 w-full max-w-[560px] shrink-0" style={{ animationDelay: ".5s" }}>
             <span className={`tone-${lTone} font-hud absolute -top-3.5 left-4 z-10 px-2.5 pb-0.5 pt-1 text-[16px] font-bold text-black`} style={{ background: "var(--tone)", transform: "skewX(-12deg)" }}>
               {loser.name.toUpperCase()}
             </span>
-            <div className="min-h-[96px] border-2 border-white/85 bg-black/80 px-5 pb-4 pt-6 shadow-[0_0_0_2px_#000,0_12px_40px_rgba(0,0,0,.6)]">
-              <p className="font-hud text-[clamp(23px,5.6vw,30px)] font-semibold leading-[1.08] text-white">
+            <div className="min-h-[84px] border-2 border-white/85 bg-black/80 px-5 pb-3 pt-5 shadow-[0_0_0_2px_#000,0_12px_40px_rgba(0,0,0,.6)]">
+              <p className="font-hud text-[clamp(21px,min(5.6vw,3.4dvh),30px)] font-semibold leading-[1.08] text-white">
                 “{typing.shown}{typing.done ? "”" : ""}
                 {typing.done && <span className="blink ml-2 inline-block align-middle text-[var(--accent)]" aria-hidden="true"><IconCaretDown className="h-[0.5em] w-[0.5em]" /></span>}
               </p>
@@ -167,7 +176,7 @@ export function KOScreen({ winner, loser, side, s1, s2, variant, onRematch, onSe
           </div>
 
           {/* Next */}
-          <div className="fade-up w-full max-w-[520px] pt-9" style={{ animationDelay: ".7s" }}>
+          <div className="fade-up w-full max-w-[520px] shrink-0 pt-5" style={{ animationDelay: ".7s" }}>
             <div className="fight-ready">
               <button type="button" onClick={onRematch} className="slant-btn block w-full bg-gradient-to-b from-[#fff3a0] via-[#ffc02e] to-[#ff5a1f] py-3 active:scale-[0.98]" style={{ "--slant": "20px" }}>
                 <span className="font-display block text-[32px] leading-none text-[var(--ink)]" style={{ transform: "skewX(-9deg)" }}>REMATCH</span>
