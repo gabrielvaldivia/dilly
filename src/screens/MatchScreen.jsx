@@ -133,7 +133,7 @@ function Backdrop({ a, b }) {
           className={`absolute inset-y-0 ${left ? "left-0" : "right-0"} w-[55%] opacity-30 grayscale`}
           style={{ maskImage: FACE_MASK, WebkitMaskImage: FACE_MASK }}
         >
-          <Portrait player={player} initialSize="40vw" />
+          <Portrait player={player} />
         </div>
       </div>
     );
@@ -282,7 +282,7 @@ export function MatchScreen({ a, b, initial, round, onChange, onSave, onQuit, sa
       <header className="relative z-10 px-3 pt-[calc(env(safe-area-inset-top)+10px)]">
         <div className="flex items-center gap-2">
           <div className="hud-face tone-p1 relative h-12 w-12 shrink-0 overflow-hidden border-2 border-black shadow-[0_0_0_2px_var(--tone)]" style={{ "--lean": "-20deg" }}>
-            <div className="unskew"><Portrait player={a} eager initialSize="34px" /></div>
+            <div className="unskew"><Portrait player={a} eager /></div>
           </div>
           <div className="min-w-0 flex-1">
             <HealthBar side={1} value={hp1} hitKey={hitKey[1]} />
@@ -301,7 +301,7 @@ export function MatchScreen({ a, b, initial, round, onChange, onSave, onQuit, sa
             <div className="font-hud mt-1 truncate text-[17px] font-semibold" style={{ color: "var(--p2)" }}>{b.name.toUpperCase()}</div>
           </div>
           <div className="hud-face tone-p2 relative h-12 w-12 shrink-0 overflow-hidden border-2 border-black shadow-[0_0_0_2px_var(--tone)]" style={{ "--lean": "20deg" }}>
-            <div className="unskew"><Portrait player={b} eager initialSize="34px" /></div>
+            <div className="unskew"><Portrait player={b} eager /></div>
           </div>
         </div>
       </header>

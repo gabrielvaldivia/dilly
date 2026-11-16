@@ -253,7 +253,7 @@ export function Globe({ players, sel, onPick, onAdd }) {
         <div className="globe-base" aria-hidden="true" />
 
         <Rig>
-          <div className="globe-3d globe-wire" aria-hidden="true">
+          <div className="globe-3d" aria-hidden="true">
             {MERIDIANS.map((a) => <span key={`m${a}`} className="g-ring g-merid" style={{ "--a": `${a}deg` }} />)}
             {PARALLELS.map((l) => (
               <span key={`p${l}`} className={`g-ring g-par ${l === 0 ? "g-equator" : ""}`} style={{ "--c": Math.cos(l * RAD).toFixed(4), "--s": Math.sin(l * RAD).toFixed(4) }} />

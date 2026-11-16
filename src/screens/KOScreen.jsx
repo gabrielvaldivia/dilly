@@ -34,7 +34,7 @@ function Card({ player, tone, children, className = "", art = null }) {
     <div className={`tone-${tone} relative aspect-[4/5] w-full ${className}`}>
       <div className="absolute inset-0 overflow-hidden border-[3px] border-black" style={{ transform: "skewX(-6deg)", boxShadow: "0 0 0 3px var(--tone), 0 18px 40px rgba(0,0,0,.6)" }}>
         <div className="absolute inset-[-2px_-10%]" style={{ transform: "skewX(6deg)" }}>
-          {art ? <img src={art} alt="" draggable={false} className="h-full w-full object-cover" /> : <Portrait player={player} eager initialSize="60cqw" />}
+          {art ? <img src={art} alt="" draggable={false} className="h-full w-full object-cover" /> : <Portrait player={player} eager />}
         </div>
         {children}
       </div>

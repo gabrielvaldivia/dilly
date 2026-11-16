@@ -63,7 +63,7 @@ export function VersusScreen({ a, b, onDone }) {
         <div className="vs-in-l absolute inset-0" style={{ clipPath: `polygon(0 0, 100% 0, 100% ${SEAM_RIGHT}%, 0 ${SEAM_LEFT}%)` }}>
           <div className="absolute inset-0" style={{ background: "linear-gradient(160deg, var(--p1) -20%, var(--p1-deep) 40%, #020414 100%)" }} />
           <div className="vs-img vs-img-top left-0" style={{ maskImage: FADE_P1, WebkitMaskImage: FADE_P1 }}>
-            <div className="vs-drift-l h-full w-full"><Portrait player={a} eager initialSize="60cqw" /></div>
+            <div className="vs-drift-l h-full w-full"><Portrait player={a} eager /></div>
           </div>
         </div>
 
@@ -71,7 +71,7 @@ export function VersusScreen({ a, b, onDone }) {
         <div className="vs-in-r absolute inset-0" style={{ clipPath: `polygon(0 ${SEAM_LEFT}%, 100% ${SEAM_RIGHT}%, 100% 100%, 0 100%)` }}>
           <div className="absolute inset-0" style={{ background: "linear-gradient(340deg, var(--p2) -20%, var(--p2-deep) 40%, #14020a 100%)" }} />
           <div className="vs-img vs-img-bottom right-0" style={{ maskImage: FADE_P2, WebkitMaskImage: FADE_P2 }}>
-            <div className="vs-drift-r h-full w-full"><Portrait player={b} eager initialSize="60cqw" /></div>
+            <div className="vs-drift-r h-full w-full"><Portrait player={b} eager /></div>
           </div>
         </div>
 

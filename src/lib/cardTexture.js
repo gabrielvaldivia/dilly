@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { photoUrl } from "./api.js";
 
 /* ------------------------------------------------------------------ */
-/* Roster cards are drawn once into a canvas (photo or monogram, gold  */
-/* or player-colored frame, name strip) and handed out as blob URLs.   */
+/* Roster cards are drawn once into a canvas (photo or placeholder,   */
+/* player-colored frame, name strip) and handed out as blob URLs.     */
 /* Each globe facet is then a single element showing a slice of that   */
 /* image — no nested DOM per facet and no animated repaints.           */
 /* ------------------------------------------------------------------ */
@@ -11,6 +11,7 @@ import { photoUrl } from "./api.js";
 const W = 320;
 const H = 400;
 const FRAME = { idle: "#f4b521", p1: "#22d3ff", p2: "#ff2e55" };
+const NAME_TOP = H - 66; // top of the name's letters (baseline H - 22, 46px type)
 
 const pending = new Map(); // key -> Promise<url | null>
 const ready = new Map(); // key -> url
@@ -39,7 +40,7 @@ function hue(name = "") {
   return h;
 }
 
-function drawMonogram(g, name) {
+function drawPlaceholder(g, name) {
   const h = hue(name);
   const bg = g.createRadialGradient(W * 0.3, H * 0.15, 10, W * 0.3, H * 0.15, H * 1.05);
   bg.addColorStop(0, `hsl(${h} 85% 58%)`);
@@ -53,18 +54,17 @@ function drawMonogram(g, name) {
   g.lineWidth = 3;
   for (let x = -H; x < W + H; x += 14) { g.beginPath(); g.moveTo(x, H); g.lineTo(x + H * 0.7, 0); g.stroke(); }
   g.restore();
+  // Same head-and-shoulders as Portrait (a 100 x 96 figure), centered in
+  // the space above the name strip.
+  const s = 2.4;
+  const top = (NAME_TOP - 96 * s) / 2;
+  g.save();
+  g.translate(W / 2 - 50 * s, top);
+  g.scale(s, s);
   g.fillStyle = "rgba(0,0,0,.45)";
-  g.beginPath(); g.arc(W / 2, H * 0.6, W * 0.18, 0, Math.PI * 2); g.fill();
-  g.beginPath(); g.moveTo(W * 0.12, H); g.bezierCurveTo(W * 0.14, H * 0.82, W * 0.3, H * 0.76, W / 2, H * 0.76);
-  g.bezierCurveTo(W * 0.7, H * 0.76, W * 0.86, H * 0.82, W * 0.88, H); g.fill();
-  g.fillStyle = "rgba(255,255,255,.92)";
-  g.font = `${Math.round(W * 0.5)}px Anton, Impact, sans-serif`;
-  g.textAlign = "center";
-  g.textBaseline = "top";
-  g.shadowColor = "rgba(0,0,0,.45)";
-  g.shadowOffsetY = 6;
-  g.fillText((name || "?").trim().charAt(0).toUpperCase() || "?", W / 2, H * 0.06);
-  g.shadowColor = "transparent";
+  g.beginPath(); g.arc(50, 19, 19, 0, Math.PI * 2); g.fill();
+  g.beginPath(); g.moveTo(14, 96); g.bezierCurveTo(16, 63, 32, 47, 50, 47); g.bezierCurveTo(68, 47, 84, 63, 86, 96); g.closePath(); g.fill();
+  g.restore();
 }
 
 function drawCover(g, img) {
@@ -92,8 +92,10 @@ function drawName(g, name) {
 }
 
 function drawFrame(g, variant) {
+  // Unselected cards are frameless; only 1P / 2P picks get a colored frame.
+  if (variant === "idle") return;
   const color = FRAME[variant];
-  if (variant !== "idle") {
+  {
     for (let k = 0; k < 8; k++) {
       g.strokeStyle = color;
       g.globalAlpha = 0.32 - k * 0.04;
@@ -147,10 +149,10 @@ async function render(player, variant) {
   const src = photoUrl(player);
   let img = null;
   if (src) {
-    try { img = await loadImage(src); } catch { /* fall back to monogram */ }
+    try { img = await loadImage(src); } catch { /* fall back to the placeholder */ }
   }
   if (img) drawCover(g, img);
-  else drawMonogram(g, player.name);
+  else drawPlaceholder(g, player.name);
   drawName(g, player.name);
   drawFrame(g, variant);
   return toUrl(canvas, "image/jpeg");

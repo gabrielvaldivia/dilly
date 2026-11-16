@@ -259,7 +259,7 @@ export function FighterSheet({ mode, player, gameCount = 0, onClose, onSaved, on
             ) : !live ? (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-gradient-to-b from-[#1c1238] to-black p-6 text-center">
                 {isEdit ? (
-                  <div className="absolute inset-0 opacity-70"><Portrait player={player} eager initialSize="55cqw" /></div>
+                  <div className="absolute inset-0 opacity-70"><Portrait player={player} eager /></div>
                 ) : null}
                 <p className="font-hud relative text-[20px] font-semibold text-white/90">
                   {cam === "blocked" ? "CAMERA ACCESS BLOCKED" : cam === "unsupported" ? "LIVE CAMERA UNAVAILABLE" : isEdit ? "" : "WARMING UP CAMERA…"}

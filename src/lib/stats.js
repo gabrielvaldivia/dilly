@@ -13,7 +13,7 @@ export function buildIndex(raw) {
 /**
  * Games between A and B, newest first, oriented so "1" is always A:
  * { id, createdAt, p1Score (A), p2Score (B), winner: 1 | 2 }.
- * This is the shape DeepStats and the celebration picker expect.
+ * This is the shape RivalryStats and the celebration picker expect.
  */
 export function matchupGames(games, aId, bId) {
   const out = [];

@@ -11,10 +11,13 @@ function nameSize(name) {
   return `${Math.min(30, 140 / Math.max(1, name.length))}cqw`;
 }
 
-function PreviewPanel({ side, player, record, active, slamKey, onFocus, onEdit }) {
+function PreviewPanel({ side, player, record, active, dimmed, slamKey, onFocus, onEdit }) {
   const isP1 = side === "p1";
   return (
-    <div className={`tone-${side} relative h-full`} style={{ containerType: "inline-size" }}>
+    <div
+      className={`tone-${side} relative h-full transition-[opacity,filter] duration-300 ${dimmed ? "opacity-40 saturate-[.35]" : ""}`}
+      style={{ containerType: "inline-size" }}
+    >
       {/* The tilted panel. The 1P/2P badge and EDIT live inside it so they
           turn with the panel instead of floating off its edges. */}
       <div className={`preview preview-${side} relative h-full w-full ${active ? "panel-focus" : ""}`}>
@@ -30,7 +33,7 @@ function PreviewPanel({ side, player, record, active, slamKey, onFocus, onEdit }
           style={{ background: "linear-gradient(180deg, var(--tone-deep), #05020a)" }}
         >
           {player ? (
-            <Portrait player={player} eager initialSize="60cqw" />
+            <Portrait player={player} eager />
           ) : (
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <svg viewBox="0 0 100 125" className="absolute inset-x-0 bottom-0 h-[78%] w-full opacity-60" preserveAspectRatio="xMidYMax meet" aria-hidden="true">
@@ -163,7 +166,7 @@ export function SelectScreen({ index, sel, setSel, onFight, onAdd, onEdit, onRec
 
       <div className="select-layout mt-4 min-h-0 flex-1 lg:mt-2">
         <section aria-label="Player 1" className="select-panel [grid-area:p1]">
-          <PreviewPanel side="p1" player={p1} record={rec1} active={active === "p1"} slamKey={slam.p1} onFocus={() => focusSide("p1")} onEdit={() => p1 && onEdit(p1)} />
+          <PreviewPanel side="p1" player={p1} record={rec1} active={active === "p1"} dimmed={active === "p2"} slamKey={slam.p1} onFocus={() => focusSide("p1")} onEdit={() => p1 && onEdit(p1)} />
         </section>
 
         <div className="flex flex-col items-center justify-center [grid-area:vs] [perspective:500px] lg:hidden">
@@ -182,7 +185,7 @@ export function SelectScreen({ index, sel, setSel, onFight, onAdd, onEdit, onRec
         </section>
 
         <section aria-label="Player 2" className="select-panel [grid-area:p2]">
-          <PreviewPanel side="p2" player={p2} record={rec2} active={active === "p2"} slamKey={slam.p2} onFocus={() => focusSide("p2")} onEdit={() => p2 && onEdit(p2)} />
+          <PreviewPanel side="p2" player={p2} record={rec2} active={active === "p2"} dimmed={active === "p1"} slamKey={slam.p2} onFocus={() => focusSide("p2")} onEdit={() => p2 && onEdit(p2)} />
         </section>
       </div>
 
