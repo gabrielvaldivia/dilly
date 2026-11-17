@@ -5,6 +5,7 @@ import { PadButton, PadGlyph, SCORE_MAX, SCORE_MIN, ScoreRuler } from "../compon
 import { haptic, sfx } from "../lib/sfx.js";
 
 const clamp = (n) => Math.max(SCORE_MIN, Math.min(SCORE_MAX, n));
+const JUMP_TO = 11; // holding + skips straight to game point territory
 
 /** Health = how far the opponent is from 11. Deuce leaves both on a sliver. */
 function healthFor(mine, opp, decisive) {
@@ -104,7 +105,7 @@ function ScoreReadout({ side, player, score, sparks, disabled, onType }) {
       {sparks.map((s) => (
         <span key={s.id} className="pointer-events-none" aria-hidden="true">
           <span className="spark" style={{ left: "50%", top: "50%" }} />
-          <span className="plus-one font-display text-[44px] text-white" style={{ left: "62%", top: "40%", textShadow: "0 3px 0 #000, 0 0 18px var(--tone)" }}>+1</span>
+          <span className="plus-one font-display text-[44px] text-white" style={{ left: "62%", top: "40%", textShadow: "0 3px 0 #000, 0 0 18px var(--tone)" }}>+{s.n}</span>
         </span>
       ))}
     </button>
@@ -149,7 +150,8 @@ function Backdrop({ a, b }) {
   );
 }
 
-function Zone({ side, player, score, combo, sparks, disabled, onBump, onDragTo, onType }) {
+function Zone({ side, player, score, combo, sparks, disabled, onBump, onJump, onDragTo, onType }) {
+  const canJump = score < JUMP_TO;
   const tone = side === 1 ? "p1" : "p2";
   return (
     <section aria-label={`${player.name}'s score`} className={`zone tone-${tone} flex flex-col items-center justify-center px-3`}>
@@ -165,7 +167,14 @@ function Zone({ side, player, score, combo, sparks, disabled, onBump, onDragTo, 
 
         <div className="mt-4 grid w-full grid-cols-2 gap-3 px-1">
           <PadButton label={`Take a point from ${player.name}`} disabled={disabled || score <= SCORE_MIN} onPress={() => onBump(side, -1)}><PadGlyph /></PadButton>
-          <PadButton label={`Point for ${player.name}`} disabled={disabled || score >= SCORE_MAX} onPress={() => onBump(side, 1)}><PadGlyph plus /></PadButton>
+          <PadButton
+            label={canJump ? `Point for ${player.name}. Hold to jump to ${JUMP_TO}.` : `Point for ${player.name}`}
+            disabled={disabled || score >= SCORE_MAX}
+            onPress={() => onBump(side, 1)}
+            onHold={canJump ? () => onJump(side, JUMP_TO) : undefined}
+          >
+            <PadGlyph plus />
+          </PadButton>
         </div>
 
         <div className="mt-5 w-full px-1">
@@ -218,6 +227,16 @@ export function MatchScreen({ a, b, initial, round, onChange, onSave, onQuit, sa
   const keyOf = (side) => (side === 1 ? "s1" : "s2");
   const remember = () => setHist((h) => [...h.slice(-80), score]);
 
+  /** Spark + "+n" on the scorer, a shake on the other side's health bar. */
+  const hit = (side, n) => {
+    const opp = side === 1 ? 2 : 1;
+    setHitKey((k) => ({ ...k, [opp]: k[opp] + 1 }));
+    const id = ++sparkId.current;
+    setSparks((sp) => [...sp.slice(-6), { id, side, n }]);
+    window.setTimeout(() => setSparks((sp) => sp.filter((s) => s.id !== id)), 700);
+    sfx.hit(side);
+  };
+
   /** −/+ pad: +1 is a "hit" (spark, health damage, point run); −1 is a correction. */
   const bump = (side, delta) => {
     const key = keyOf(side);
@@ -227,18 +246,24 @@ export function MatchScreen({ a, b, initial, round, onChange, onSave, onQuit, sa
     setScore((s) => ({ ...s, [key]: next }));
     if (delta > 0) {
       setCombo((c) => (c.side === side ? { side, n: c.n + 1 } : { side, n: 1 }));
-      const opp = side === 1 ? 2 : 1;
-      setHitKey((k) => ({ ...k, [opp]: k[opp] + 1 }));
-      const id = ++sparkId.current;
-      setSparks((sp) => [...sp.slice(-6), { id, side }]);
-      window.setTimeout(() => setSparks((sp) => sp.filter((s) => s.id !== id)), 700);
-      sfx.hit(side);
+      hit(side, delta);
       haptic(14);
     } else {
       setCombo({ side: 0, n: 0 });
       sfx.undo();
       haptic(6);
     }
+  };
+
+  /** Holding +: jump straight to a score in one undo step. */
+  const jump = (side, value) => {
+    const key = keyOf(side);
+    if (value <= score[key]) return;
+    remember();
+    setScore((s) => ({ ...s, [key]: value }));
+    setCombo({ side: 0, n: 0 });
+    hit(side, value - score[key]);
+    haptic([18, 40, 28]);
   };
 
   /** Ruler drag: one undo step per gesture; ticks are handled by the ruler. */
@@ -310,9 +335,9 @@ export function MatchScreen({ a, b, initial, round, onChange, onSave, onQuit, sa
       <main className="relative mt-2 grid flex-1 grid-cols-2 overflow-hidden">
         <Backdrop a={a} b={b} />
         <Zone side={1} player={a} score={s1} combo={combo.side === 1 ? combo.n : 0} sparks={sparks.filter((s) => s.side === 1)}
-          disabled={saving} onBump={bump} onDragTo={dragTo} onType={typeScore} />
+          disabled={saving} onBump={bump} onJump={jump} onDragTo={dragTo} onType={typeScore} />
         <Zone side={2} player={b} score={s2} combo={combo.side === 2 ? combo.n : 0} sparks={sparks.filter((s) => s.side === 2)}
-          disabled={saving} onBump={bump} onDragTo={dragTo} onType={typeScore} />
+          disabled={saving} onBump={bump} onJump={jump} onDragTo={dragTo} onType={typeScore} />
 
         {status && (
           <div className="pointer-events-none absolute inset-x-0 top-3 flex justify-center" aria-live="polite">

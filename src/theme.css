@@ -213,6 +213,11 @@ button { touch-action: manipulation; }
   -webkit-mask-image: radial-gradient(circle, #000 30%, transparent 70%); mask-image: radial-gradient(circle, #000 30%, transparent 70%);
 }
 @keyframes spark { 0% { transform: scale(.2) rotate(0); opacity: 1; } 100% { transform: scale(1.5) rotate(40deg); opacity: 0; } }
+/* Hold-to-11 charge: a bright bar sweeps across the + pad while it's held. */
+.pad-charge { position: absolute; left: 2px; top: 2px; bottom: 2px; width: 0; pointer-events: none;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--tone) 30%, transparent), color-mix(in srgb, #fff 50%, var(--tone)));
+  box-shadow: 3px 0 0 #fff, 0 0 16px var(--tone); animation: pad-charge linear forwards; }
+@keyframes pad-charge { to { width: calc(100% - 4px); } }
 .plus-one { position: absolute; pointer-events: none; animation: plus-one .7s cubic-bezier(.2,.9,.3,1) forwards; }
 @keyframes plus-one { 0% { transform: translate(-50%, -50%) scale(.6); opacity: 0; } 20% { transform: translate(-50%, -90%) scale(1.25); opacity: 1; } 100% { transform: translate(-50%, -190%) scale(1); opacity: 0; } }
 .banner-zoom { animation: banner-zoom 1.1s cubic-bezier(.2,1.6,.4,1) both; }

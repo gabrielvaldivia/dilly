@@ -20,15 +20,49 @@ export function PadGlyph({ plus }) {
   );
 }
 
-/** Chunky slanted arcade pad button in the side's color. */
-export function PadButton({ label, children, onPress, disabled }) {
+export const HOLD_MS = 550;
+
+/**
+ * Chunky slanted arcade pad button in the side's color. With `onHold`, a
+ * long press charges a bar across the pad and fires onHold instead of
+ * onPress once it fills.
+ */
+export function PadButton({ label, children, onPress, onHold, disabled }) {
+  const [charging, setCharging] = useState(false);
+  const timer = useRef(0);
+  const held = useRef(false);
+
+  const cancel = () => {
+    window.clearTimeout(timer.current);
+    setCharging(false);
+  };
+  const onPointerDown = (e) => {
+    held.current = false;
+    if (!onHold || disabled || e.button !== 0) return;
+    setCharging(true);
+    timer.current = window.setTimeout(() => {
+      held.current = true;
+      setCharging(false);
+      onHold();
+    }, HOLD_MS);
+  };
+  const onClick = () => {
+    if (held.current) { held.current = false; return; }
+    onPress();
+  };
+
   return (
     <button
       type="button"
       aria-label={label}
       disabled={disabled}
-      onClick={onPress}
-      className="group relative h-16 w-full disabled:opacity-30 active:scale-[0.94]"
+      onClick={onClick}
+      onPointerDown={onPointerDown}
+      onPointerUp={cancel}
+      onPointerLeave={cancel}
+      onPointerCancel={cancel}
+      onContextMenu={onHold ? (e) => e.preventDefault() : undefined}
+      className="group relative h-16 w-full touch-manipulation disabled:opacity-30 active:scale-[0.94]"
       style={{ transform: "skewX(-12deg)" }}
     >
       <span
@@ -38,6 +72,7 @@ export function PadButton({ label, children, onPress, disabled }) {
           boxShadow: "0 0 0 2px var(--tone), 0 0 18px -2px var(--tone), inset 0 2px 0 rgba(255,255,255,.28)",
         }}
       />
+      {charging && <span className="pad-charge" style={{ animationDuration: `${HOLD_MS}ms` }} aria-hidden="true" />}
       <span className="relative flex items-center justify-center" style={{ transform: "skewX(12deg)" }}>
         {children}
       </span>
