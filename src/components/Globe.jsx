@@ -113,7 +113,14 @@ function Rig({ children, style }) {
   );
 }
 
-const DEG_PER_PX = 0.4; // drag sensitivity
+/*
+ * 1:1 grab: the card under the finger stays under the finger. Cards sit at
+ * 1.03R and the layer's perspective (2.4D = 4.8R) magnifies the front by
+ * 4.8 / (4.8 - 1.03), so turning the globe by θ radians moves its front
+ * FRONT_PX_PER_RAD × R pixels on screen.
+ */
+const FRONT_PX_PER_RAD = 1.03 * (4.8 / (4.8 - 1.03));
+const degPerPx = (el) => (180 / Math.PI) / (FRONT_PX_PER_RAD * (el.getBoundingClientRect().width / 2));
 const FRICTION = 0.94; // momentum kept per 60fps frame
 const SETTLE_DELAY = 1100; // ms the globe rests where it stopped before returning
 const SETTLE_MS = 900;
@@ -196,7 +203,7 @@ export function Globe({ players, sel, onPick, onAdd }) {
     if (e.button !== 0) return;
     halt(); // catch a spinning or returning globe
     const r = rot.current;
-    drag.current = { x: e.clientX, y: e.clientY, yaw: r.yaw, pitch: r.pitch, moved: false, samples: [] };
+    drag.current = { x: e.clientX, y: e.clientY, yaw: r.yaw, pitch: r.pitch, k: degPerPx(e.currentTarget), moved: false, samples: [] };
   };
   const onPointerMove = (e) => {
     const d = drag.current;
@@ -209,8 +216,8 @@ export function Globe({ players, sel, onPick, onAdd }) {
       try { e.target.setPointerCapture(e.pointerId); } catch { /* already released */ }
     }
     const r = rot.current;
-    r.yaw = d.yaw + dx * DEG_PER_PX;
-    r.pitch = d.pitch - dy * DEG_PER_PX;
+    r.yaw = d.yaw + dx * d.k;
+    r.pitch = d.pitch - dy * d.k;
     const now = performance.now();
     d.samples.push({ t: now, yaw: r.yaw, pitch: r.pitch });
     while (d.samples.length > 2 && now - d.samples[0].t > 90) d.samples.shift();
