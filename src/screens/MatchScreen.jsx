@@ -297,7 +297,8 @@ export function MatchScreen({ a, b, initial, round, onChange, onSave, onQuit, sa
     sfx.deny();
   };
 
-  const canSave = s1 !== s2 && !saving;
+  // Pickleball: first to 11, win by 2. SAVE stays locked until someone has won.
+  const canSave = decisive && !saving;
   const hp1 = healthFor(s1, s2, decisive);
   const hp2 = healthFor(s2, s1, decisive);
 
@@ -369,7 +370,7 @@ export function MatchScreen({ a, b, initial, round, onChange, onSave, onQuit, sa
           <button type="button" onClick={undo} disabled={!hist.length || saving} className="font-hud slant-btn shrink-0 bg-white/12 px-4 pb-1 pt-2.5 text-[19px] font-semibold text-white/80 disabled:opacity-35 active:scale-95">
             UNDO
           </button>
-          <div className={`min-w-0 flex-1 ${decisive && canSave ? "fight-ready" : ""}`}>
+          <div className={`min-w-0 flex-1 ${canSave ? "fight-ready" : ""}`}>
             <button
               type="button"
               onClick={() => canSave && onSave(s1, s2)}
@@ -377,7 +378,7 @@ export function MatchScreen({ a, b, initial, round, onChange, onSave, onQuit, sa
               className={`slant-btn block h-full w-full py-2.5 active:scale-[0.98] ${canSave ? "bg-gradient-to-b from-[#fff3a0] via-[#ffc02e] to-[#ff5a1f]" : "bg-white/10"}`}
             >
               <span className={`font-display block truncate px-2 text-[24px] leading-none ${canSave ? "text-[var(--ink)]" : "text-white/35"}`} style={{ transform: "skewX(-9deg)" }}>
-                {saving ? "SAVING…" : s1 === s2 ? `${s1}–${s2}` : `${decisive ? "K.O.! " : ""}SAVE ${s1}–${s2}`}
+                {saving ? "SAVING…" : decisive ? `K.O.! SAVE ${s1}–${s2}` : `${s1}–${s2}`}
               </span>
             </button>
           </div>
