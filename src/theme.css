@@ -365,14 +365,21 @@ button { touch-action: manipulation; }
 .globe-base { position: absolute; left: 8%; right: 8%; bottom: calc(var(--D) * -0.1); height: calc(var(--D) * 0.16); border-radius: 50%; pointer-events: none; background: radial-gradient(closest-side, rgba(255, 190, 60, .55), rgba(255, 60, 90, .25) 60%, transparent); }
 
 /* A card is a zero-size button at the globe centre; each facet is ONE
-   element carrying a slice of the card's baked texture. No transitions,
-   no per-facet animation, nothing to repaint after the first frame. */
+   full-height strip carrying a slice of the card's baked texture. No
+   transitions, no per-facet animation, nothing to repaint after the
+   first frame. Each strip reaches --o past its right edge, showing its
+   neighbour's first pixel there, so joins never open a hairline and the
+   picture never shifts or stretches across them. */
 .gtile { position: absolute; left: 50%; top: 50%; width: 0; height: 0; padding: 0; border: 0; background: none; transform-style: preserve-3d; outline: none; }
-.gfacet { position: absolute; left: 0; top: 0;
-  width: calc(var(--R) * var(--tw) / var(--cols) + 1.5px); height: calc(var(--R) * var(--tw) * 1.25 / var(--rows) + 1.5px);
-  margin: calc(var(--R) * var(--tw) * 1.25 / var(--rows) / -2) 0 0 calc(var(--R) * var(--tw) / var(--cols) / -2);
-  transform: rotateY(var(--lon)) rotateX(var(--lat)) translateZ(calc(var(--R) * 1.03)) scale(1.03) scaleX(var(--sx));
-  background-color: #120a24; background-repeat: no-repeat; background-size: calc(var(--cols) * 100%) calc(var(--rows) * 100%);
+.gfacet { position: absolute; left: 0; top: 0; --o: 1px;
+  width: calc(var(--R) * var(--sw) + var(--o)); height: calc(var(--R) * var(--sh));
+  margin: calc(var(--R) * var(--sh) / -2) 0 0 calc(var(--R) * var(--sw) / -2);
+  /* On the sphere itself (same radius as the grid rings) so card edges stay on their gutters. */
+  transform-origin: calc(var(--R) * var(--sw) / 2) 50%;
+  transform: rotateY(var(--lon)) rotateX(var(--lat)) translateZ(var(--R));
+  background-color: #120a24; background-repeat: no-repeat;
+  background-size: calc(var(--R) * var(--sw) * var(--cols)) 100%;
+  background-position: calc(var(--R) * var(--sw) * var(--j) * -1) 0;
   backface-visibility: hidden; -webkit-backface-visibility: hidden; }
 .gtile:focus-visible .gfacet { filter: brightness(1.35); }
 .gfacet .cursor-tag { transform: none; top: -16px; z-index: 1; }
