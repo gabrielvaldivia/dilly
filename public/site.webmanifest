@@ -1,0 +1,15 @@
+{
+  "name": "Dilly: Pickleball Fighters",
+  "short_name": "Dilly",
+  "description": "Arcade-style pickleball scorekeeping. Pick your fighters, score the match and settle the rivalry.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#07050f",
+  "theme_color": "#07050f",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

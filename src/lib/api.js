@@ -12,7 +12,11 @@ export function beatenUrl(player) {
     : null;
 }
 
-/** URL for a fighter's photo, or null when they don't have one yet. */
+/**
+ * URL for a fighter's photo, or null when they don't have one yet.
+ * photoSrc overrides it (the share-image renderer uses downloaded copies).
+ */
 export function photoUrl(player) {
+  if (player?.photoSrc) return player.photoSrc;
   return player?.photo ? `/api/photos/${encodeURIComponent(player.id)}?v=${player.photo}` : null;
 }

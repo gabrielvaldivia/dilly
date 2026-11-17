@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Dilly share assets</title>
+    <style>
+      /* Transparent page so the round favicon keeps clear corners; the
+         animated stage is frozen so every render comes out the same. */
+      html, body { margin: 0; background: transparent !important; overflow: hidden; }
+      *, *::before, *::after { animation-play-state: paused !important; transition: none !important; }
+      /* The panels are the real select-screen ones; a share image has nothing to edit. */
+      button[aria-label^="Edit"] { display: none !important; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="./share.jsx"></script>
+  </body>
+</html>

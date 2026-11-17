@@ -4,3 +4,6 @@ dist/
 .env
 .env*.local
 .vercel
+
+# Share-image renderer downloads (real players photos)
+share/cache/

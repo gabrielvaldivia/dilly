@@ -11,7 +11,7 @@ function nameSize(name) {
   return `${Math.min(30, 140 / Math.max(1, name.length))}cqw`;
 }
 
-function PreviewPanel({ side, player, record, active, dimmed, slamKey, onFocus, onEdit }) {
+export function PreviewPanel({ side, player, record, active, dimmed, slamKey, onFocus, onEdit }) {
   const isP1 = side === "p1";
   return (
     <div
