@@ -5,7 +5,18 @@ import { PadButton, PadGlyph, SCORE_MAX, SCORE_MIN, ScoreRuler } from "../compon
 import { haptic, sfx } from "../lib/sfx.js";
 
 const clamp = (n) => Math.max(SCORE_MIN, Math.min(SCORE_MAX, n));
-const JUMP_TO = 11; // holding + skips straight to game point territory
+const GAME_TO = 11;
+
+/**
+ * Holding + jumps to the score that wins from here: 11, or 2 clear of the
+ * opponent once they reach 10. null when there's nothing to win (already
+ * won, or the opponent already has).
+ */
+function winningScore(mine, opp) {
+  if (opp >= GAME_TO && opp - mine >= 2) return null;
+  const target = Math.max(GAME_TO, opp + 2);
+  return mine < target ? target : null;
+}
 
 /** Health = how far the opponent is from 11. Deuce leaves both on a sliver. */
 function healthFor(mine, opp, decisive) {
@@ -150,8 +161,8 @@ function Backdrop({ a, b }) {
   );
 }
 
-function Zone({ side, player, score, combo, sparks, disabled, onBump, onJump, onDragTo, onType }) {
-  const canJump = score < JUMP_TO;
+function Zone({ side, player, score, opp, combo, sparks, disabled, onBump, onJump, onDragTo, onType }) {
+  const target = winningScore(score, opp);
   const tone = side === 1 ? "p1" : "p2";
   return (
     <section aria-label={`${player.name}'s score`} className={`zone tone-${tone} flex flex-col items-center justify-center px-3`}>
@@ -168,10 +179,10 @@ function Zone({ side, player, score, combo, sparks, disabled, onBump, onJump, on
         <div className="mt-4 grid w-full grid-cols-2 gap-3 px-1">
           <PadButton label={`Take a point from ${player.name}`} disabled={disabled || score <= SCORE_MIN} onPress={() => onBump(side, -1)}><PadGlyph /></PadButton>
           <PadButton
-            label={canJump ? `Point for ${player.name}. Hold to jump to ${JUMP_TO}.` : `Point for ${player.name}`}
+            label={target ? `Point for ${player.name}. Hold to jump to ${target}.` : `Point for ${player.name}`}
             disabled={disabled || score >= SCORE_MAX}
             onPress={() => onBump(side, 1)}
-            onHold={canJump ? () => onJump(side, JUMP_TO) : undefined}
+            onHold={target ? () => onJump(side, target) : undefined}
           >
             <PadGlyph plus />
           </PadButton>
@@ -216,7 +227,7 @@ export function MatchScreen({ a, b, initial, round, onChange, onSave, onQuit, sa
   const { s1, s2 } = score;
   const lead = s1 - s2;
   const top = Math.max(s1, s2);
-  const decisive = top >= 11 && Math.abs(lead) >= 2;
+  const decisive = top >= GAME_TO && Math.abs(lead) >= 2;
   const leader = lead > 0 ? a : b;
   const leaderSide = lead > 0 ? 1 : 2;
   let status = null;
@@ -255,7 +266,7 @@ export function MatchScreen({ a, b, initial, round, onChange, onSave, onQuit, sa
     }
   };
 
-  /** Holding +: jump straight to a score in one undo step. */
+  /** Holding +: jump straight to the winning score in one undo step. */
   const jump = (side, value) => {
     const key = keyOf(side);
     if (value <= score[key]) return;
@@ -335,9 +346,9 @@ export function MatchScreen({ a, b, initial, round, onChange, onSave, onQuit, sa
       {/* Score zones */}
       <main className="relative mt-2 grid flex-1 grid-cols-2 overflow-hidden">
         <Backdrop a={a} b={b} />
-        <Zone side={1} player={a} score={s1} combo={combo.side === 1 ? combo.n : 0} sparks={sparks.filter((s) => s.side === 1)}
+        <Zone side={1} player={a} score={s1} opp={s2} combo={combo.side === 1 ? combo.n : 0} sparks={sparks.filter((s) => s.side === 1)}
           disabled={saving} onBump={bump} onJump={jump} onDragTo={dragTo} onType={typeScore} />
-        <Zone side={2} player={b} score={s2} combo={combo.side === 2 ? combo.n : 0} sparks={sparks.filter((s) => s.side === 2)}
+        <Zone side={2} player={b} score={s2} opp={s1} combo={combo.side === 2 ? combo.n : 0} sparks={sparks.filter((s) => s.side === 2)}
           disabled={saving} onBump={bump} onJump={jump} onDragTo={dragTo} onType={typeScore} />
 
         {status && (
