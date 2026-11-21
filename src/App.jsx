@@ -85,7 +85,7 @@ export default function App() {
     const t = window.setInterval(() => {
       if (document.hidden || busyRef.current) return;
       load().catch(() => {});
-    }, 12000);
+    }, 30000);
     return () => window.clearInterval(t);
   }, [load]);
 
