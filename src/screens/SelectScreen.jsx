@@ -251,17 +251,16 @@ export function SelectScreen({ index, mode, onMode, sel, setSel, onFight, onAdd,
         </section>
       </div>
 
-      {/* Singles / doubles + Fight */}
+      {/* Singles / doubles + Fight: one --slant, so the switch and the button share an angle. */}
       <div className="relative z-20 shrink-0 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3">
-        <div className="mx-auto flex w-full max-w-[560px] items-stretch gap-2.5">
-        <ModeSwitch mode={mode} onChange={changeMode} />
+        <div className="mx-auto flex w-full max-w-[560px] items-stretch gap-2.5" style={{ "--slant": "22px" }}>
+        <ModeSwitch mode={mode} onChange={changeMode} className="mode-switch-beside" />
         <div key={denied} className={`relative min-w-0 flex-1 ${ready ? "fight-ready" : ""} ${denied ? "deny-shake" : ""}`}>
           <button
             type="button"
             onClick={fight}
             aria-disabled={!ready}
             className={`slant-btn block w-full py-[clamp(8px,1.4dvh,12px)] active:scale-[0.98] ${ready ? "bg-gradient-to-b from-[#fff3a0] via-[#ffc02e] to-[#ff5a1f]" : "bg-white/10"}`}
-            style={{ "--slant": "22px" }}
           >
             <span className={`font-display block text-[clamp(30px,4.6dvh,38px)] leading-none tracking-wide ${ready ? "text-[var(--ink)]" : "text-white/35"}`} style={{ transform: "skewX(-9deg)" }}>
               FIGHT!
