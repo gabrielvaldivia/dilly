@@ -6,6 +6,7 @@ import { beatenUrl } from "../lib/api.js";
 import { ensureBeaten } from "../lib/beaten.js";
 import { pickExcuse } from "../lib/excuses.js";
 import { haptic, sfx } from "../lib/sfx.js";
+import { useBook } from "../lib/spine.js";
 import { teamName } from "../lib/stats.js";
 
 const KO_HOLD = 1300;
@@ -134,6 +135,8 @@ export function KOScreen({ winners, losers, side, s1, s2, variant, onRematch, on
   const lTone = side === 1 ? "p2" : "p1";
   const glow = side === 1 ? "34, 211, 255" : "255, 46, 85";
   const headline = `${winnerName} ${winners.length > 1 ? "win" : "wins"}`;
+  // Two-page layout: the headline has the right page, about half the width.
+  const headlineVw = useBook() ? Math.min(7, 66 / headline.length) : Math.min(14, 140 / headline.length);
 
   useEffect(() => {
     sfx.ko();
@@ -168,10 +171,10 @@ export function KOScreen({ winners, losers, side, s1, s2, variant, onRematch, on
       )}
 
       {reveal && (
-        <div className="relative mx-auto flex h-full w-full max-w-[860px] flex-col items-center px-5 pb-[calc(env(safe-area-inset-bottom)+14px)] pt-[calc(env(safe-area-inset-top)+14px)]">
+        <div className="ko-reveal book-pages pad-x relative mx-auto flex h-full w-full max-w-[860px] flex-col items-center pb-[calc(env(safe-area-inset-bottom)+14px)] pt-[calc(env(safe-area-inset-top)+14px)] [--pad:20px]">
           {/* Result */}
-          <div className="fade-up flex shrink-0 flex-col items-center text-center">
-            <FxText tone={wTone} style={{ fontSize: `min(${Math.min(14, 140 / headline.length)}vw, 64px)` }}>{headline}</FxText>
+          <div className="ko-result fade-up flex shrink-0 flex-col items-center text-center">
+            <FxText tone={wTone} style={{ fontSize: `min(${headlineVw}vw, 64px)` }}>{headline}</FxText>
             <div className="mt-2 flex items-center gap-3">
               <span className="font-display text-[clamp(34px,9vw,48px)] leading-none text-[var(--accent)]" style={{ textShadow: "0 3px 0 #000" }}>
                 {Math.max(s1, s2)}–{Math.min(s1, s2)}
@@ -186,7 +189,7 @@ export function KOScreen({ winners, losers, side, s1, s2, variant, onRematch, on
           </div>
 
           {/* The excuse */}
-          <div className="fade-up relative mt-3 w-full max-w-[560px] shrink-0" style={{ animationDelay: ".5s" }}>
+          <div className="ko-excuse fade-up relative mt-3 w-full max-w-[560px] shrink-0" style={{ animationDelay: ".5s" }}>
             <span className={`tone-${lTone} font-hud absolute -top-3.5 left-4 z-10 px-2.5 pb-0.5 pt-1 text-[16px] font-bold text-black`} style={{ background: "var(--tone)", transform: "skewX(-12deg)" }}>
               {talker.name.toUpperCase()}
             </span>

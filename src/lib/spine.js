@@ -6,9 +6,12 @@ import { useSyncExternalStore } from "react";
 /* This works out whether the page spans a spine and marks <html> with  */
 /*   spine-v  — a vertical spine: the phone held open like a book;     */
 /*   spine-h  — a horizontal spine: the open phone turned upright;     */
+/*   book     — a short, wide screen laid out as two pages with a      */
+/*              gutter down the middle: any spine-v screen, and any    */
+/*              landscape screen of that shape, detected or not;       */
 /* and sets --spine-w, the band layouts keep clear around it. Layouts   */
 /* assume the spine runs through the middle of the viewport, as it does */
-/* on book-style foldables, so a symmetric split lines up with it.      */
+/* on book-style foldables.                                             */
 /* ------------------------------------------------------------------ */
 
 const BAND = 32; // px kept clear around the spine
@@ -18,6 +21,9 @@ const CENTERED = 8; // how far off the middle a reported fold may be and still c
 const DUO_SHORT = 669;
 const DUO_LONG = 951;
 const NEAR = 4;
+
+// Short and wide enough for two pages, below the desktop layout (1024px).
+const BOOK = "(orientation: landscape) and (min-width: 720px) and (max-width: 1023px) and (min-height: 560px)";
 
 /**
  * Where the browser says the fold is (the Viewport Segments API: in
@@ -51,18 +57,22 @@ function fromScreenSize() {
 }
 
 let axis = null; // "v" | "h" | null
+let book = false;
 const listeners = new Set();
 
 function update() {
   const found = fromSegments() ?? fromScreenSize();
+  const nextBook = found?.axis === "v" || window.matchMedia(BOOK).matches;
   const root = document.documentElement;
   root.classList.toggle("spine-v", found?.axis === "v");
   root.classList.toggle("spine-h", found?.axis === "h");
+  root.classList.toggle("book", nextBook);
   if (found) root.style.setProperty("--spine-w", `${found.band}px`);
   else root.style.removeProperty("--spine-w");
-  const next = found?.axis ?? null;
-  if (next !== axis) {
-    axis = next;
+  const nextAxis = found?.axis ?? null;
+  if (nextAxis !== axis || nextBook !== book) {
+    axis = nextAxis;
+    book = nextBook;
     listeners.forEach((fn) => fn());
   }
 }
@@ -74,11 +84,14 @@ export function watchSpine() {
   window.addEventListener("orientationchange", update);
 }
 
+const subscribe = (fn) => { listeners.add(fn); return () => listeners.delete(fn); };
+
 /** The current spine: "v", "h" or null. Re-renders when it changes. */
 export function useSpine() {
-  return useSyncExternalStore(
-    (fn) => { listeners.add(fn); return () => listeners.delete(fn); },
-    () => axis,
-    () => null
-  );
+  return useSyncExternalStore(subscribe, () => axis, () => null);
+}
+
+/** Whether the screen is laid out as two pages (.book). Re-renders when it changes. */
+export function useBook() {
+  return useSyncExternalStore(subscribe, () => book, () => false);
 }

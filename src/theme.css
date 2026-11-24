@@ -555,45 +555,84 @@ button.rec-card:focus-visible { outline: none; background: rgba(255, 210, 63, .2
 }
 
 /* ------------------------------------------------------------------ */
-/* Foldables: keep controls off the spine (see lib/spine.js).           */
-/*  .spine-v  open like a book: rows that ran across the middle split   */
-/*            into a left and a right page, --spine-w apart. Every      */
-/*            split is symmetric, so its gap lands on the spine.        */
-/*  .spine-h  open and turned upright: on the match screen the score    */
-/*            sits above the spine and the pads below it.               */
+/* Safe areas left and right. With viewport-fit=cover the page runs under */
+/* whatever the system keeps at the screen's sides — on the closed      */
+/* iPhone Duo, a column down the spine edge; on notched phones in       */
+/* landscape, the camera housing — and reports it as safe-area insets.  */
+/* .pad-x pads a screen by its own --pad plus that inset, per side.     */
 /* ------------------------------------------------------------------ */
-/* Wrappers that only group things for the split; elsewhere they vanish. */
-.match-controls-left, .sheet-camera, .sheet-details { display: contents; }
+:root { --safe-l: env(safe-area-inset-left, 0px); --safe-r: env(safe-area-inset-right, 0px); }
+.pad-x { padding-left: calc(var(--pad, 16px) + var(--safe-l)); padding-right: calc(var(--pad, 16px) + var(--safe-r)); }
+.match-main { margin-left: var(--safe-l); margin-right: var(--safe-r); }
 
-/* Select: 1V1 / 2V2 hugs the spine on the left page, FIGHT! fills the right. */
-.spine-v .fight-row { display: grid; grid-template-columns: 1fr 1fr; column-gap: var(--spine-w); }
-.spine-v .fight-row > .mode-switch { justify-self: end; margin-right: 0; }
+/* ------------------------------------------------------------------ */
+/* Book layout: a short, wide screen — above all the iPhone Duo open in */
+/* landscape — gets two pages with a gutter down the middle, where the  */
+/* Duo's spine is (lib/spine.js adds .book). The gutter is centred on   */
+/* the viewport, not the safe area, so it stays on the spine even when  */
+/* the insets differ; --page-l is the left page's width inside a        */
+/* full-width screen padded by .pad-x.                                  */
+/* ------------------------------------------------------------------ */
+.book { --gutter: calc(var(--spine-w, 32px) + 16px); }
+.book .book-pages {
+  --page-l: calc(50vw - var(--gutter) / 2 - var(--pad, 16px) - var(--safe-l));
+  display: grid; grid-template-columns: var(--page-l) var(--gutter) minmax(0, 1fr);
+  max-width: none; margin-left: 0; margin-right: 0;
+}
+/* A list split across the two pages (Records). */
+.pages { display: grid; grid-column: 1 / -1; grid-template-columns: subgrid; align-items: start; }
+.page-l { grid-column: 1; }
+.page-r { grid-column: 3; }
 
-/* Match: QUIT and UNDO on the left page, SAVE on the right. */
-.spine-v .match-controls { display: grid; grid-template-columns: 1fr 1fr; column-gap: var(--spine-w); }
-.spine-v .match-controls-left { display: flex; gap: 8px; }
+/* Select: the fighters (1P | VS | 2P) and FIGHT! on the left page, the globe on the right. */
+.book .select-root {
+  grid-template-columns: calc((var(--page-l) - 44px) / 2) 44px calc((var(--page-l) - 44px) / 2) var(--gutter) minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-areas: "head head head head head" "p1 vs p2 . globe" "fight fight fight . globe";
+  row-gap: 14px;
+}
+.book .select-head { grid-area: head; grid-template-columns: var(--page-l) var(--gutter) minmax(0, 1fr); }
+.book .select-head > :nth-child(1) { grid-column: 1; grid-row: 1; }
+.book .select-head > :nth-child(2) { grid-column: 1; grid-row: 1; justify-self: center; }
+.book .select-head > :nth-child(3) { grid-column: 3; grid-row: 1; }
+.book .select-layout { display: contents; }
+.book .select-fight { grid-area: fight; padding-top: 0; }
+.book .globe-cell { margin: 0; z-index: 0; }
+.book .globe-wrap { --D: min(96cqw, 96cqh, 600px); top: 0; }
 
-/* K.O.: a loser either side of the spine; NEW FIGHTERS and RECORDS stacked
-   on the left page, REMATCH filling the right. */
-.spine-v .ko-duo + .ko-duo { margin-left: calc(var(--spine-w) + 36px); }
-.spine-v .ko-next { display: grid; grid-template-columns: 1fr 1fr; column-gap: var(--spine-w); }
-.spine-v .ko-rematch { grid-column: 2; grid-row: 1; display: flex; }
-.spine-v .ko-more { grid-column: 1; grid-row: 1; margin-top: 0; grid-template-columns: 1fr; gap: 10px; }
+/* Match: each team's half ends at the spine; QUIT and UNDO on the left page, SAVE on the right. */
+.book .match-main { grid-template-columns: calc(50vw - var(--safe-l)) minmax(0, 1fr); }
+.book .match-foot > p { grid-column: 1 / -1; }
+.book .match-controls { display: contents; }
+.book .match-controls-left { display: flex; gap: 8px; grid-column: 1; }
+.book .match-controls > :last-child { grid-column: 3; }
 
-/* Records: RANKINGS and RIVALRIES on the left page, HISTORY on the right.
-   Tracks: two tabs, the spine (less the two 6px gaps beside it), one tab. */
-.spine-v .rec-tabs { grid-template-columns:
-  calc((100% - var(--spine-w)) / 4 - 3px) calc((100% - var(--spine-w)) / 4 - 3px)
-  calc(var(--spine-w) - 12px) calc((100% - var(--spine-w)) / 2); }
-.spine-v .rec-tabs > :last-child { grid-column: 4; }
+/* K.O.: the beaten losers and their excuse on the left page; the result and what's next on the right. */
+.book .ko-reveal { grid-template-rows: minmax(0, 1fr) auto; grid-template-areas: "cards . result" "excuse . next"; align-items: center; justify-items: center; row-gap: 14px; }
+.book .ko-card-area { grid-area: cards; align-self: stretch; justify-self: stretch; }
+.book .ko-result { grid-area: result; }
+.book .ko-excuse { grid-area: excuse; margin-top: 0; align-self: end; }
+.book .ko-next { grid-area: next; padding-top: 0; align-self: end; }
+
+/* Records: back, title and tabs on the left page, the 1V1 / 2V2 switch on the right; lists split across both. */
+.book .rec-root { align-content: start; }
+.book .rec-head { grid-column: 1 / -1; grid-template-columns: subgrid; }
+.book .rec-head > :nth-child(1) { grid-column: 1; grid-row: 1; }
+.book .rec-head > :nth-child(2) { grid-column: 1; grid-row: 1; justify-self: center; }
+.book .rec-head > :nth-child(3) { grid-column: 3; grid-row: 1; }
+.book .rec-tabs { grid-column: 1; }
+.book .rec-body { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; align-items: start; }
+.book .rec-stats { position: sticky; top: calc(env(safe-area-inset-top) + 12px); }
 
 /* Fighter sheet: the camera on the left page, name and save on the right. */
-.spine-v .sheet-form { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto 1fr; column-gap: calc(var(--spine-w) + 48px); max-width: 1040px; }
-.spine-v .sheet-head { grid-column: 1 / -1; }
-.spine-v .sheet-camera { display: block; }
-.spine-v .sheet-details { display: flex; flex-direction: column; }
-.spine-v .sheet-details > label:first-child { margin-top: 20px; }
+.match-controls-left, .sheet-camera, .sheet-details { display: contents; }
+.book .sheet-form { grid-template-rows: auto 1fr; }
+.book .sheet-head { grid-column: 1 / -1; }
+.book .sheet-camera { display: block; grid-column: 1; }
+.book .sheet-details { display: flex; flex-direction: column; grid-column: 3; }
+.book .sheet-details > label:first-child { margin-top: 20px; }
 
-/* Match, upright: the readout ends just above the spine, the pads start below it. */
+/* Open and turned upright (spine across the middle): on the match screen
+   the readout ends just above the spine and the pads start below it. */
 .spine-h .zone { justify-content: flex-start; padding-top: max(0px, calc(var(--fold, 50%) - clamp(110px, 30vw, 210px) - var(--spine-w) / 2)); }
 .spine-h .zone-pads { margin-top: var(--spine-w); }

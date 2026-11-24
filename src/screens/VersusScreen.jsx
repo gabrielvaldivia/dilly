@@ -108,11 +108,11 @@ export function VersusScreen({ a, b, onDone }) {
         </div>
 
         {/* Names, on each wedge's short side */}
-        <div className={`vs-name vs-name-r right-[4%] top-[calc(env(safe-area-inset-top)+5%)] items-end text-right ${duo ? "vs-name-duo" : ""}`} style={nameLen(a)}>
+        <div className={`vs-name vs-name-r right-[calc(4%_+_var(--safe-r))] top-[calc(env(safe-area-inset-top)+5%)] items-end text-right ${duo ? "vs-name-duo" : ""}`} style={nameLen(a)}>
           <p className="font-hud text-[20px] font-bold text-white/80">{duo ? "1P TEAM" : "1P"}</p>
           <TeamNames team={a} tone="p1" />
         </div>
-        <div className={`vs-name vs-name-l bottom-[calc(env(safe-area-inset-bottom)+5%)] left-[4%] items-start ${duo ? "vs-name-duo" : ""}`} style={nameLen(b)}>
+        <div className={`vs-name vs-name-l bottom-[calc(env(safe-area-inset-bottom)+5%)] left-[calc(4%_+_var(--safe-l))] items-start ${duo ? "vs-name-duo" : ""}`} style={nameLen(b)}>
           <TeamNames team={b} tone="p2" />
           <p className={`font-hud text-[20px] font-bold text-white/80 ${duo ? "mt-3" : "mt-1"}`}>{duo ? "2P TEAM" : "2P"}</p>
         </div>

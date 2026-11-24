@@ -411,7 +411,7 @@ export function MatchScreen({ a, b, initial, round, onChange, onTag, onSave, onQ
   return (
     <div className="no-select fixed inset-0 z-30 flex flex-col">
       {/* HUD */}
-      <header className="relative z-10 px-3 pt-[calc(env(safe-area-inset-top)+10px)]">
+      <header className="pad-x relative z-10 pt-[calc(env(safe-area-inset-top)+10px)] [--pad:12px]">
         <div className="flex items-center gap-2">
           <HudFace side={1} team={a} tagged={tagKey[1] > 0} />
           <div className="min-w-0 flex-1">
@@ -435,7 +435,7 @@ export function MatchScreen({ a, b, initial, round, onChange, onTag, onSave, onQ
       </header>
 
       {/* Score zones */}
-      <main ref={mainRef} className="relative mt-2 grid flex-1 grid-cols-2 overflow-hidden">
+      <main ref={mainRef} className="match-main relative mt-2 grid flex-1 grid-cols-2 overflow-hidden">
         <Backdrop a={a[0]} b={b[0]} tagged={{ 1: tagKey[1] > 0, 2: tagKey[2] > 0 }} />
         <Zone side={1} team={a} score={s1} opp={s2} combo={combo.side === 1 ? combo.n : 0} sparks={sparks.filter((s) => s.side === 1)} tagKey={tagKey[1]}
           disabled={saving} onBump={bump} onJump={jump} onDragTo={dragTo} onType={typeScore} onTag={tag} />
@@ -463,7 +463,7 @@ export function MatchScreen({ a, b, initial, round, onChange, onTag, onSave, onQ
       </main>
 
       {/* Controls */}
-      <footer className="relative z-10 bg-gradient-to-t from-black via-black/90 to-black/40 px-3 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3">
+      <footer className="match-foot book-pages pad-x relative z-10 bg-gradient-to-t from-black via-black/90 to-black/40 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3 [--pad:12px]">
         {error && <p className="mb-2 text-center text-sm font-bold text-[var(--p2)]" role="alert">{error}</p>}
         <div className="match-controls flex items-stretch gap-2">
           <div className="match-controls-left">

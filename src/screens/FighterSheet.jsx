@@ -231,7 +231,7 @@ export function FighterSheet({ mode, player, gameCount = 0, onClose, onSaved, on
   return (
     <div className="no-select fixed inset-0 z-50 overflow-y-auto bg-[linear-gradient(180deg,#0b0620_0%,#170b30_55%,#2a0a26_100%)]" role="dialog" aria-modal="true" aria-label={isEdit ? `Edit ${player.name}` : "Add a new fighter"}>
       <div className="challenger-stripes h-2.5 w-full" aria-hidden="true" />
-      <form onSubmit={submit} className="sheet-form mx-auto flex min-h-[calc(100dvh-10px)] w-full max-w-[480px] flex-col px-5 pb-[calc(env(safe-area-inset-bottom)+20px)] pt-[calc(env(safe-area-inset-top)+12px)]">
+      <form onSubmit={submit} className="sheet-form book-pages pad-x mx-auto flex min-h-[calc(100dvh-10px)] w-full max-w-[480px] flex-col [--pad:20px] pb-[calc(env(safe-area-inset-bottom)+20px)] pt-[calc(env(safe-area-inset-top)+12px)]">
         <div className="sheet-head flex items-start justify-between gap-3">
           <div>
             <p className="font-hud text-[16px] font-semibold text-[var(--accent)] blink">{isEdit ? "FIGHTER PROFILE" : "WARNING"}</p>

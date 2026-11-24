@@ -196,9 +196,9 @@ export function SelectScreen({ index, mode, onMode, sel, setSel, onFight, onAdd,
     );
 
   return (
-    <div className="no-select relative z-10 mx-auto flex h-dvh w-full max-w-[560px] flex-col overflow-y-clip px-4 pt-[calc(env(safe-area-inset-top)+8px)] lg:max-w-[1440px] lg:px-8">
+    <div className="select-root book-pages pad-x no-select relative z-10 mx-auto flex h-dvh w-full max-w-[560px] flex-col overflow-y-clip pt-[calc(env(safe-area-inset-top)+8px)] lg:max-w-[1440px] lg:[--pad:32px]">
       {/* Top bar */}
-      <header className="relative z-10 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+      <header className="select-head relative z-10 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
         <div className="justify-self-start">
           <button
             type="button"
@@ -252,7 +252,7 @@ export function SelectScreen({ index, mode, onMode, sel, setSel, onFight, onAdd,
       </div>
 
       {/* Singles / doubles + Fight: one --slant, so the switch and the button share an angle. */}
-      <div className="relative z-20 shrink-0 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3">
+      <div className="select-fight relative z-20 shrink-0 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3">
         <div className="fight-row mx-auto flex w-full max-w-[560px] items-stretch gap-2.5" style={{ "--slant": "22px" }}>
         <ModeSwitch mode={mode} onChange={changeMode} className="mode-switch-beside" />
         <div key={denied} className={`relative min-w-0 flex-1 ${ready ? "fight-ready" : ""} ${denied ? "deny-shake" : ""}`}>
