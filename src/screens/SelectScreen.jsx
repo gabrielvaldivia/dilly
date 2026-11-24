@@ -21,9 +21,21 @@ function nameSize(name) {
   return `${Math.min(30, 140 / Math.max(1, name.length))}cqw`;
 }
 
-export function PreviewPanel({ side, player, record, active, dimmed, slamKey, onFocus, onEdit, badge, label }) {
+/**
+ * A fighter's tilted, slanted portrait panel.
+ * `cut`: how far in, as % of the width, the slanted side sits at the
+ * panel's top and bottom. A lone panel runs 0 → 12. A doubles pair splits
+ * it, 0 → 6 above and 6 → 12 below, so the slant runs on as one straight
+ * line and the pair reads as one card cut in two.
+ * `flat`: the panel sits in a team stack that tilts as one piece (so the
+ * pair shares one perspective), so it doesn't tilt on its own.
+ */
+export function PreviewPanel({ side, player, record, active, dimmed, slamKey, onFocus, onEdit, badge, label, cut = [0, 12], flat = false }) {
   const isP1 = side === "p1";
   const title = label ?? SIDE_LABEL[side];
+  const [top, bottom] = cut;
+  const clip = isP1 ? `polygon(0 0, ${100 - top}% 0, ${100 - bottom}% 100%, 0 100%)` : `polygon(${top}% 0, 100% 0, 100% 100%, ${bottom}% 100%)`;
+  const outline = isP1 ? `0,0 ${100 - top},0 ${100 - bottom},100 0,100` : `${top},0 100,0 100,100 ${bottom},100`;
   return (
     <div
       className={`tone-${side} relative h-full transition-[opacity,filter] duration-300 ${dimmed ? "opacity-40 saturate-[.35]" : ""}`}
@@ -31,7 +43,7 @@ export function PreviewPanel({ side, player, record, active, dimmed, slamKey, on
     >
       {/* The tilted panel. The 1P/2P badge and EDIT live inside it so they
           turn with the panel instead of floating off its edges. */}
-      <div className={`preview preview-${side} relative h-full w-full ${active ? "panel-focus" : ""}`}>
+      <div className={`${flat ? "" : `preview preview-${side}`} relative h-full w-full ${active ? "panel-focus" : ""}`}>
       <button
         type="button"
         onClick={onFocus}
@@ -40,8 +52,8 @@ export function PreviewPanel({ side, player, record, active, dimmed, slamKey, on
       >
         <div
           key={slamKey}
-          className={`${slamKey ? "panel-slam" : ""} ${isP1 ? "slant-l" : "slant-r"} relative h-full w-full overflow-hidden`}
-          style={{ background: "linear-gradient(180deg, var(--tone-deep), #05020a)" }}
+          className={`${slamKey ? "panel-slam" : ""} relative h-full w-full overflow-hidden`}
+          style={{ background: "linear-gradient(180deg, var(--tone-deep), #05020a)", clipPath: clip }}
         >
           {player ? (
             <Portrait player={player} eager />
@@ -61,7 +73,7 @@ export function PreviewPanel({ side, player, record, active, dimmed, slamKey, on
               clipped away, leaving a 3px line inside the shape. */}
           <svg className="pointer-events-none absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
             <polygon
-              points={isP1 ? "0,0 100,0 88,100 0,100" : "0,0 100,0 100,100 12,100"}
+              points={outline}
               fill="none"
               strokeWidth="6"
               strokeLinejoin="miter"
@@ -90,7 +102,9 @@ export function PreviewPanel({ side, player, record, active, dimmed, slamKey, on
           type="button"
           onClick={onEdit}
           aria-label={`Edit ${player.name}`}
-          className={`font-hud absolute top-3 z-10 ${isP1 ? "right-3" : "left-3"} rounded-sm bg-black/60 px-2 pb-0.5 pt-1 text-[14px] font-semibold text-white/85 active:scale-95`}
+          // Kept clear of the slanted side where it starts at the top.
+          style={{ [isP1 ? "right" : "left"]: `calc(${top}% + 12px)` }}
+          className="font-hud absolute top-3 z-10 rounded-sm bg-black/60 px-2 pb-0.5 pt-1 text-[14px] font-semibold text-white/85 active:scale-95"
         >
           EDIT
         </button>
@@ -171,6 +185,8 @@ export function SelectScreen({ index, mode, onMode, sel, setSel, onFight, onAdd,
     const player = fighterIn(slot);
     return (
       <PreviewPanel
+        flat={doubles}
+        cut={doubles ? (partner ? [6, 12] : [0, 6]) : undefined}
         side={side}
         player={player}
         record={records[slot]}
@@ -184,10 +200,11 @@ export function SelectScreen({ index, mode, onMode, sel, setSel, onFight, onAdd,
       />
     );
   };
-  // Doubles: each side's pair stacked, tag-team style; the partner slides in.
+  // Doubles: each side's pair stacked, tag-team style, tilting as one card;
+  // the partner slides in.
   const team = (side) =>
     doubles ? (
-      <div className="team-stack">
+      <div className={`team-stack preview preview-${side}`}>
         <div className="team-slot">{panel(side)}</div>
         <div className={`team-slot team-in-${side}`}>{panel(`${side}b`)}</div>
       </div>
