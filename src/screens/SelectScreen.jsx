@@ -231,7 +231,7 @@ export function SelectScreen({ index, mode, onMode, sel, setSel, onFight, onAdd,
           {team("p1")}
         </section>
 
-        <div className="flex flex-col items-center justify-center [grid-area:vs] [perspective:500px] lg:hidden">
+        <div className="select-vs flex flex-col items-center justify-center [grid-area:vs] [perspective:500px] lg:hidden">
           <span className="vs-emblem inline-block"><FxText className="text-[40px]">VS</FxText></span>
           {h2h && h2h.total > 0 && (
             <div className="font-hud mt-2 text-center text-[15px] font-semibold leading-tight text-white/80">

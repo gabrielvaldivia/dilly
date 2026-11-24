@@ -584,21 +584,31 @@ button.rec-card:focus-visible { outline: none; background: rgba(255, 210, 63, .2
 .page-l { grid-column: 1; }
 .page-r { grid-column: 3; }
 
-/* Select: the fighters (1P | VS | 2P) and FIGHT! on the left page, the globe on the right. */
+/* Select: like desktop — 1P's photos, the globe in the middle, 2P's photos —
+   all one height. The band they share is centred between the logo and
+   FIGHT! and is no taller than the middle column is wide (--mid-w), so the
+   globe (a circle filling its cell) is exactly as tall as the photos.
+   The spacer rows take what's left; the 7px gaps either side of an empty
+   spacer add up to the usual 14px. FIGHT! sits under the globe, as wide. */
 .book .select-root {
-  grid-template-columns: calc((var(--page-l) - 44px) / 2) 44px calc((var(--page-l) - 44px) / 2) var(--gutter) minmax(0, 1fr);
-  grid-template-rows: auto minmax(0, 1fr) auto;
-  grid-template-areas: "head head head head head" "p1 vs p2 . globe" "fight fight fight . globe";
-  row-gap: 14px;
+  --side-w: clamp(170px, 22vw, 240px);
+  --mid-w: calc(100vw - var(--safe-l) - var(--safe-r) - 2 * var(--pad, 16px) - 2 * var(--side-w) - 28px);
+  grid-template-columns: var(--side-w) minmax(0, 1fr) var(--side-w);
+  grid-template-rows: auto minmax(0, 1fr) minmax(0, var(--mid-w)) minmax(0, 1fr) auto;
+  grid-template-areas: "head head head" ". . ." "p1 globe p2" ". . ." "fight fight fight";
+  column-gap: 14px;
+  row-gap: 7px;
 }
-.book .select-head { grid-area: head; grid-template-columns: var(--page-l) var(--gutter) minmax(0, 1fr); }
-.book .select-head > :nth-child(1) { grid-column: 1; grid-row: 1; }
-.book .select-head > :nth-child(2) { grid-column: 1; grid-row: 1; justify-self: center; }
-.book .select-head > :nth-child(3) { grid-column: 3; grid-row: 1; }
+.book .select-head { grid-area: head; }
 .book .select-layout { display: contents; }
+.book .select-vs { display: none; }
 .book .select-fight { grid-area: fight; padding-top: 0; }
+.book .fight-row { max-width: var(--mid-w); }
 .book .globe-cell { margin: 0; z-index: 0; }
-.book .globe-wrap { --D: min(96cqw, 96cqh, 600px); top: 0; }
+.book .globe-wrap { --D: min(100cqw, 100cqh); top: 0; }
+/* The photos turn in toward the globe, as on desktop. */
+.book .preview-p1 { transform: perspective(1100px) rotateY(calc(24deg + var(--px) * 6deg)) rotateX(calc(var(--py) * -4deg)); }
+.book .preview-p2 { transform: perspective(1100px) rotateY(calc(-24deg + var(--px) * 6deg)) rotateX(calc(var(--py) * -4deg)); }
 
 /* Match: each team's half ends at the spine; QUIT and UNDO on the left page, SAVE on the right. */
 .book .match-main { grid-template-columns: calc(50vw - var(--safe-l)) minmax(0, 1fr); }
