@@ -288,7 +288,7 @@ export function RecordsScreen({ index, mode, sel, onBack, onEdit, onAdd, onDelet
         <ModeSwitch mode={kind} onChange={setKind} className="mode-switch-sm justify-self-end" />
       </header>
 
-      <nav className="mt-5 grid grid-cols-3 gap-1.5" aria-label="Records sections">
+      <nav className="rec-tabs mt-5 grid grid-cols-3 gap-1.5" aria-label="Records sections">
         {TABS.map((t) => (
           <button
             key={t.id}

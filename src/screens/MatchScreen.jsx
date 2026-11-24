@@ -3,6 +3,7 @@ import { FxText } from "../components/FxText.jsx";
 import { Portrait } from "../components/Portrait.jsx";
 import { PadButton, PadGlyph, SCORE_MAX, SCORE_MIN, ScoreRuler } from "../components/ScoreDial.jsx";
 import { haptic, sfx } from "../lib/sfx.js";
+import { useSpine } from "../lib/spine.js";
 import { teamName } from "../lib/stats.js";
 
 const clamp = (n) => Math.max(SCORE_MIN, Math.min(SCORE_MAX, n));
@@ -203,10 +204,10 @@ function Zone({ side, team, score, opp, combo, sparks, tagKey, disabled, onBump,
         </div>
       )}
 
-      <div className="relative flex w-full max-w-[340px] flex-col items-center">
+      <div className="zone-stack relative flex w-full max-w-[340px] flex-col items-center">
         <ScoreReadout side={side} name={name} score={score} sparks={sparks} disabled={disabled} onType={onType} />
 
-        <div className="mt-4 grid w-full grid-cols-2 gap-3 px-1">
+        <div className="zone-pads mt-4 grid w-full grid-cols-2 gap-3 px-1">
           <PadButton label={`Take a point from ${name}`} disabled={disabled || score <= SCORE_MIN} onPress={() => onBump(side, -1)}><PadGlyph /></PadButton>
           <PadButton
             label={target ? `Point for ${name}. Hold to jump to ${target}.` : `Point for ${name}`}
@@ -278,10 +279,23 @@ export function MatchScreen({ a, b, initial, round, onChange, onTag, onSave, onQ
   const [quitArmed, setQuitArmed] = useState(false);
   const [tagKey, setTagKey] = useState({ 1: 0, 2: 0 });
   const sparkId = useRef(0);
+  const mainRef = useRef(null);
+  const spine = useSpine();
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
 
   useWakeLock();
+
+  // Open phone turned upright: tell the zones where the spine crosses them
+  // (--fold, from their top) so the score sits above it and the pads below.
+  useEffect(() => {
+    const el = mainRef.current;
+    if (spine !== "h" || !el) return;
+    const place = () => el.style.setProperty("--fold", `${window.innerHeight / 2 - el.getBoundingClientRect().top}px`);
+    place();
+    window.addEventListener("resize", place);
+    return () => window.removeEventListener("resize", place);
+  }, [spine]);
 
   useEffect(() => { onChangeRef.current(score); }, [score]);
 
@@ -421,7 +435,7 @@ export function MatchScreen({ a, b, initial, round, onChange, onTag, onSave, onQ
       </header>
 
       {/* Score zones */}
-      <main className="relative mt-2 grid flex-1 grid-cols-2 overflow-hidden">
+      <main ref={mainRef} className="relative mt-2 grid flex-1 grid-cols-2 overflow-hidden">
         <Backdrop a={a[0]} b={b[0]} tagged={{ 1: tagKey[1] > 0, 2: tagKey[2] > 0 }} />
         <Zone side={1} team={a} score={s1} opp={s2} combo={combo.side === 1 ? combo.n : 0} sparks={sparks.filter((s) => s.side === 1)} tagKey={tagKey[1]}
           disabled={saving} onBump={bump} onJump={jump} onDragTo={dragTo} onType={typeScore} onTag={tag} />
@@ -451,13 +465,15 @@ export function MatchScreen({ a, b, initial, round, onChange, onTag, onSave, onQ
       {/* Controls */}
       <footer className="relative z-10 bg-gradient-to-t from-black via-black/90 to-black/40 px-3 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3">
         {error && <p className="mb-2 text-center text-sm font-bold text-[var(--p2)]" role="alert">{error}</p>}
-        <div className="flex items-stretch gap-2">
+        <div className="match-controls flex items-stretch gap-2">
+          <div className="match-controls-left">
           <button type="button" onClick={quit} disabled={saving} className={`font-hud slant-btn shrink-0 px-4 pb-1 pt-2.5 text-[19px] font-semibold active:scale-95 ${quitArmed ? "bg-[var(--p2)] text-white" : "bg-white/12 text-white/80"}`}>
             {quitArmed ? "QUIT?" : "QUIT"}
           </button>
           <button type="button" onClick={undo} disabled={!hist.length || saving} className="font-hud slant-btn shrink-0 bg-white/12 px-4 pb-1 pt-2.5 text-[19px] font-semibold text-white/80 disabled:opacity-35 active:scale-95">
             UNDO
           </button>
+          </div>
           <div className={`min-w-0 flex-1 ${canSave ? "fight-ready" : ""}`}>
             <button
               type="button"

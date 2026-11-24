@@ -199,13 +199,13 @@ export function KOScreen({ winners, losers, side, s1, s2, variant, onRematch, on
           </div>
 
           {/* Next */}
-          <div className="fade-up w-full max-w-[520px] shrink-0 pt-5" style={{ animationDelay: ".7s" }}>
-            <div className="fight-ready">
+          <div className="ko-next fade-up w-full max-w-[520px] shrink-0 pt-5" style={{ animationDelay: ".7s" }}>
+            <div className="ko-rematch fight-ready">
               <button type="button" onClick={onRematch} className="slant-btn block w-full bg-gradient-to-b from-[#fff3a0] via-[#ffc02e] to-[#ff5a1f] py-3 active:scale-[0.98]" style={{ "--slant": "20px" }}>
                 <span className="font-display block text-[32px] leading-none text-[var(--ink)]" style={{ transform: "skewX(-9deg)" }}>REMATCH</span>
               </button>
             </div>
-            <div className="mt-3 grid grid-cols-2 gap-3">
+            <div className="ko-more mt-3 grid grid-cols-2 gap-3">
               <button type="button" onClick={onSelect} className="font-hud slant-btn bg-white/12 pb-1.5 pt-3 text-[20px] font-semibold text-white active:scale-95">NEW FIGHTERS</button>
               <button type="button" onClick={onRecords} className="font-hud slant-btn bg-white/12 pb-1.5 pt-3 text-[20px] font-semibold text-white active:scale-95">RECORDS</button>
             </div>

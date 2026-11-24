@@ -253,7 +253,7 @@ export function SelectScreen({ index, mode, onMode, sel, setSel, onFight, onAdd,
 
       {/* Singles / doubles + Fight: one --slant, so the switch and the button share an angle. */}
       <div className="relative z-20 shrink-0 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3">
-        <div className="mx-auto flex w-full max-w-[560px] items-stretch gap-2.5" style={{ "--slant": "22px" }}>
+        <div className="fight-row mx-auto flex w-full max-w-[560px] items-stretch gap-2.5" style={{ "--slant": "22px" }}>
         <ModeSwitch mode={mode} onChange={changeMode} className="mode-switch-beside" />
         <div key={denied} className={`relative min-w-0 flex-1 ${ready ? "fight-ready" : ""} ${denied ? "deny-shake" : ""}`}>
           <button

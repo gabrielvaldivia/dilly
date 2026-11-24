@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useCardTexture } from "../lib/cardTexture.js";
+import { useSpine } from "../lib/spine.js";
 
 const RAD = Math.PI / 180;
 const GAP = 0.06; // gutter between cards (arc / radius); the grid lines run down its middle
@@ -46,8 +47,11 @@ function bandsFrom(from, dLon) {
  * parallels are spaced so every cell keeps the card's shape. Rows share
  * columns; a short row (outer rows first) leaves its last cell open.
  * Everything is relative to the radius so CSS can size it.
+ * `split`: a foldable's spine runs down the middle of the screen, so with
+ * an odd number of columns the block shifts half a column to put a gutter,
+ * not a card, on the spine.
  */
-function layoutGlobe(n, maxTw = 0.5) {
+function layoutGlobe(n, maxTw = 0.5, split = false) {
   const rows = n <= 3 ? 1 : n <= 8 ? 2 : n <= 15 ? 3 : n <= 24 ? 4 : n <= 35 ? 5 : 6;
   const cols = Math.ceil(n / rows);
   const odd = rows % 2 === 1;
@@ -78,17 +82,18 @@ function layoutGlobe(n, maxTw = 0.5) {
   for (let i = 0; i < Math.ceil(rows / 2); i++) { order.push(rows - 1 - i); if (i !== rows - 1 - i) order.push(i); }
   for (let e = 0; e < rows * cols - n; e++) counts[order[e]]--;
 
+  const shift = split && cols % 2 ? dLon / 2 : 0;
   const tiles = [];
   bands.forEach((b, r) => {
     const tw = Math.cos(b.c) * dLon - GAP; // card width at its centre row
     const first = Math.floor((cols - counts[r]) / 2);
     for (let j = 0; j < counts[r]; j++) {
-      tiles.push({ lat: b.c / RAD, lon: ((first + j - (cols - 1) / 2) * dLon) / RAD, tw, th: b.h - GAP });
+      tiles.push({ lat: b.c / RAD, lon: ((first + j - (cols - 1) / 2) * dLon + shift) / RAD, tw, th: b.h - GAP });
     }
   });
 
   const step = dLon / RAD;
-  const offset = cols % 2 ? step / 2 : 0; // a line between every pair of columns
+  const offset = cols % 2 && !shift ? step / 2 : 0; // a line between every pair of columns
   const meridians = Array.from({ length: k / 2 }, (_, i) => offset + i * step);
   const tops = [...(odd ? [h0 / 2] : []), ...north.map((b) => b.c + b.h / 2)].map((l) => l / RAD);
   const parallels = [...(odd ? [] : [0]), ...tops.flatMap((l) => [l, -l])];
@@ -184,7 +189,8 @@ export function Globe({ players, picks, onPick, onAdd }) {
   const suppressClick = useRef(false);
   const rot = useRef({ yaw: 0, pitch: 0, vy: 0, vp: 0, raf: 0, timer: 0 });
   const grid = useMemo(facetGrid, []);
-  const { tiles, meridians, parallels } = useMemo(() => layoutGlobe(players.length + 1, maxCardArc()), [players.length]);
+  const split = useSpine() === "v";
+  const { tiles, meridians, parallels } = useMemo(() => layoutGlobe(players.length + 1, maxCardArc(), split), [players.length, split]);
 
   useEffect(() => () => { cancelAnimationFrame(rot.current.raf); window.clearTimeout(rot.current.timer); }, []);
 
