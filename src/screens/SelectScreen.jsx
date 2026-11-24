@@ -1,9 +1,19 @@
 import { useMemo, useState } from "react";
 import { FxText } from "../components/FxText.jsx";
 import { Globe } from "../components/Globe.jsx";
+import { ModeSwitch } from "../components/ModeSwitch.jsx";
 import { Portrait } from "../components/Portrait.jsx";
-import { headToHead, playerRecord } from "../lib/stats.js";
+import { gamesFor, headToHead, playerRecord } from "../lib/stats.js";
 import { haptic, sfx } from "../lib/sfx.js";
+
+/*
+ * Selection slots. Singles fills p1 and p2; doubles also fills each side's
+ * partner, p1b and p2b — picked in team order, 1P's pair first. Partners
+ * stay remembered (just hidden) while in singles.
+ */
+export const SLOTS = { singles: ["p1", "p2"], doubles: ["p1", "p1b", "p2", "p2b"] };
+export const ALL_SLOTS = SLOTS.doubles;
+const sideOf = (slot) => slot.slice(0, 2);
 
 const SIDE_LABEL = { p1: "PLAYER 1", p2: "PLAYER 2" };
 
@@ -11,8 +21,9 @@ function nameSize(name) {
   return `${Math.min(30, 140 / Math.max(1, name.length))}cqw`;
 }
 
-export function PreviewPanel({ side, player, record, active, dimmed, slamKey, onFocus, onEdit }) {
+export function PreviewPanel({ side, player, record, active, dimmed, slamKey, onFocus, onEdit, badge, label }) {
   const isP1 = side === "p1";
+  const title = label ?? SIDE_LABEL[side];
   return (
     <div
       className={`tone-${side} relative h-full transition-[opacity,filter] duration-300 ${dimmed ? "opacity-40 saturate-[.35]" : ""}`}
@@ -24,7 +35,7 @@ export function PreviewPanel({ side, player, record, active, dimmed, slamKey, on
       <button
         type="button"
         onClick={onFocus}
-        aria-label={player ? `${SIDE_LABEL[side]}: ${player.name}` : `${SIDE_LABEL[side]}: empty`}
+        aria-label={player ? `${title}: ${player.name}` : `${title}: empty`}
         className="block h-full w-full"
       >
         <div
@@ -72,7 +83,7 @@ export function PreviewPanel({ side, player, record, active, dimmed, slamKey, on
         className={`font-hud pointer-events-none absolute -top-2.5 ${isP1 ? "left-1" : "right-1"} px-2 pt-0.5 text-[18px] font-bold text-black`}
         style={{ background: "var(--tone)", transform: "skewX(-12deg)", boxShadow: "0 0 16px var(--tone)" }}
       >
-        {isP1 ? "1P" : "2P"}
+        {badge ?? (isP1 ? "1P" : "2P")}
       </span>
       {player && (
         <button
@@ -89,49 +100,100 @@ export function PreviewPanel({ side, player, record, active, dimmed, slamKey, on
   );
 }
 
-export function SelectScreen({ index, sel, setSel, onFight, onAdd, onEdit, onRecords, muted, onToggleMute }) {
+export function SelectScreen({ index, mode, onMode, sel, setSel, onFight, onAdd, onEdit, onRecords, muted, onToggleMute }) {
   const [focus, setFocus] = useState(null);
-  const [slam, setSlam] = useState({ p1: 0, p2: 0 });
+  const [slam, setSlam] = useState({ p1: 0, p1b: 0, p2: 0, p2b: 0 });
   const [denied, setDenied] = useState(0);
-  const { players, games, byId } = index;
-  const p1 = sel.p1 ? byId.get(sel.p1) : null;
-  const p2 = sel.p2 ? byId.get(sel.p2) : null;
-  const active = focus ?? (!p1 ? "p1" : !p2 ? "p2" : null);
-  const ready = Boolean(p1 && p2);
+  const { players, byId } = index;
+  const doubles = mode === "doubles";
+  const slots = SLOTS[mode];
+  const games = gamesFor(index, doubles ? 2 : 1);
+  const fighterIn = (slot) => (sel[slot] ? byId.get(sel[slot]) ?? null : null);
+  const focused = focus && slots.includes(focus) ? focus : null;
+  const active = focused ?? slots.find((k) => !sel[k]) ?? null;
+  const ready = slots.every((k) => sel[k]);
 
-  const rec1 = useMemo(() => (p1 ? playerRecord(games, p1.id) : null), [games, p1]);
-  const rec2 = useMemo(() => (p2 ? playerRecord(games, p2.id) : null), [games, p2]);
-  const h2h = useMemo(() => (ready ? headToHead(games, p1.id, p2.id) : null), [games, p1, p2, ready]);
+  const records = useMemo(
+    () => Object.fromEntries(slots.map((k) => [k, sel[k] ? playerRecord(games, sel[k]) : null])),
+    [games, sel, slots]
+  );
+  const h2h = useMemo(() => {
+    if (!ready) return null;
+    return doubles ? headToHead(games, [sel.p1, sel.p1b], [sel.p2, sel.p2b]) : headToHead(games, sel.p1, sel.p2);
+  }, [games, sel, ready, doubles]);
+  // Which side each picked fighter is on, for their card on the globe.
+  const picks = useMemo(() => new Map(slots.filter((k) => sel[k]).map((k) => [sel[k], sideOf(k)])), [sel, slots]);
+
+  const bang = (...picked) => setSlam((s) => ({ ...s, ...Object.fromEntries(picked.map((k) => [k, s[k] + 1])) }));
 
   const pick = (id) => {
-    const other = focus === "p1" ? "p2" : "p1";
-    if (focus && sel[other] === id) {
-      setSel({ [focus]: id, [other]: sel[focus] });
+    const holder = slots.find((k) => sel[k] === id);
+    // Focused slot + a fighter already picked elsewhere: they trade places.
+    if (focused && holder && holder !== focused) {
+      setSel({ ...sel, [focused]: id, [holder]: sel[focused] });
       setFocus(null);
-      setSlam((s) => ({ p1: s.p1 + 1, p2: s.p2 + 1 }));
-      sfx.select(focus === "p1" ? 1 : 2);
+      bang(focused, holder);
+      sfx.select(sideOf(focused) === "p1" ? 1 : 2);
       haptic(14);
       return;
     }
-    if (sel.p1 === id) { setSel({ ...sel, p1: null }); setFocus("p1"); sfx.undo(); haptic(6); return; }
-    if (sel.p2 === id) { setSel({ ...sel, p2: null }); setFocus("p2"); sfx.undo(); haptic(6); return; }
-    const side = active ?? "p2";
-    setSel({ ...sel, [side]: id });
+    // Tapping a picked fighter un-picks them and reopens their slot.
+    if (holder) { setSel({ ...sel, [holder]: null }); setFocus(holder); sfx.undo(); haptic(6); return; }
+    const slot = active ?? slots[slots.length - 1];
+    const next = { ...sel, [slot]: id };
+    // A fighter parked in a slot this mode hides (a partner, during singles) moves here.
+    for (const k of ALL_SLOTS) if (k !== slot && next[k] === id) next[k] = null;
+    setSel(next);
     setFocus(null);
-    setSlam((s) => ({ ...s, [side]: s[side] + 1 }));
-    sfx.select(side === "p1" ? 1 : 2);
+    bang(slot);
+    sfx.select(sideOf(slot) === "p1" ? 1 : 2);
     haptic(14);
   };
 
-  const focusSide = (side) => {
+  const focusSlot = (slot) => {
     sfx.move();
-    setFocus((f) => (f === side ? null : side));
+    setFocus((f) => (f === slot ? null : slot));
+  };
+
+  const changeMode = (next) => {
+    setFocus(null);
+    onMode(next);
   };
 
   const fight = () => {
     if (!ready) { setDenied((n) => n + 1); sfx.deny(); haptic([30, 40, 30]); return; }
     onFight();
   };
+
+  const panel = (slot) => {
+    const side = sideOf(slot);
+    const partner = slot !== side;
+    const player = fighterIn(slot);
+    return (
+      <PreviewPanel
+        side={side}
+        player={player}
+        record={records[slot]}
+        active={active === slot}
+        dimmed={active !== null && active !== slot}
+        slamKey={slam[slot]}
+        onFocus={() => focusSlot(slot)}
+        onEdit={() => player && onEdit(player)}
+        badge={partner ? "PARTNER" : undefined}
+        label={partner ? `${SIDE_LABEL[side]} PARTNER` : undefined}
+      />
+    );
+  };
+  // Doubles: each side's pair stacked, tag-team style; the partner slides in.
+  const team = (side) =>
+    doubles ? (
+      <div className="team-stack">
+        <div className="team-slot">{panel(side)}</div>
+        <div className={`team-slot team-in-${side}`}>{panel(`${side}b`)}</div>
+      </div>
+    ) : (
+      panel(side)
+    );
 
   return (
     <div className="no-select relative z-10 mx-auto flex h-dvh w-full max-w-[560px] flex-col overflow-y-clip px-4 pt-[calc(env(safe-area-inset-top)+8px)] lg:max-w-[1440px] lg:px-8">
@@ -165,8 +227,8 @@ export function SelectScreen({ index, sel, setSel, onFight, onAdd, onEdit, onRec
       </header>
 
       <div className="select-layout mt-4 min-h-0 flex-1 lg:mt-2">
-        <section aria-label="Player 1" className="select-panel [grid-area:p1]">
-          <PreviewPanel side="p1" player={p1} record={rec1} active={active === "p1"} dimmed={active === "p2"} slamKey={slam.p1} onFocus={() => focusSide("p1")} onEdit={() => p1 && onEdit(p1)} />
+        <section aria-label={doubles ? "Team 1" : "Player 1"} className="select-panel [grid-area:p1]">
+          {team("p1")}
         </section>
 
         <div className="flex flex-col items-center justify-center [grid-area:vs] [perspective:500px] lg:hidden">
@@ -181,17 +243,19 @@ export function SelectScreen({ index, sel, setSel, onFight, onAdd, onEdit, onRec
         </div>
 
         <section aria-label="Roster" className="globe-cell [grid-area:globe]">
-          <Globe players={players} sel={sel} onPick={pick} onAdd={() => { sfx.move(); onAdd(active); }} />
+          <Globe players={players} picks={picks} onPick={pick} onAdd={() => { sfx.move(); onAdd(active); }} />
         </section>
 
-        <section aria-label="Player 2" className="select-panel [grid-area:p2]">
-          <PreviewPanel side="p2" player={p2} record={rec2} active={active === "p2"} dimmed={active === "p1"} slamKey={slam.p2} onFocus={() => focusSide("p2")} onEdit={() => p2 && onEdit(p2)} />
+        <section aria-label={doubles ? "Team 2" : "Player 2"} className="select-panel [grid-area:p2]">
+          {team("p2")}
         </section>
       </div>
 
-      {/* Fight */}
+      {/* Singles / doubles + Fight */}
       <div className="relative z-20 shrink-0 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3">
-        <div key={denied} className={`relative mx-auto w-full max-w-[560px] ${ready ? "fight-ready" : ""} ${denied ? "deny-shake" : ""}`}>
+        <div className="mx-auto flex w-full max-w-[560px] items-stretch gap-2.5">
+        <ModeSwitch mode={mode} onChange={changeMode} />
+        <div key={denied} className={`relative min-w-0 flex-1 ${ready ? "fight-ready" : ""} ${denied ? "deny-shake" : ""}`}>
           <button
             type="button"
             onClick={fight}
@@ -203,6 +267,7 @@ export function SelectScreen({ index, sel, setSel, onFight, onAdd, onEdit, onRec
               FIGHT!
             </span>
           </button>
+        </div>
         </div>
       </div>
     </div>

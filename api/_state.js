@@ -11,6 +11,11 @@ const PHOTO_MAX_BYTES = 1_500_000;
 /* State shape                                                         */
 /*   players: [{ id, name, createdAt, photo: version | null }]        */
 /*   games:   [{ id, createdAt, p1Id, p2Id, p1Score, p2Score }]       */
+/*   doubles: [{ id, createdAt, p1Ids: [a, b], p2Ids: [c, d],         */
+/*               p1Score, p2Score }]   (2v2: side 1 = p1Ids)           */
+/*                                                                     */
+/* Doubles games live in their own list, so everything that reads     */
+/* `games` (singles records, rivalries, older clients) is unaffected.  */
 /*                                                                     */
 /* The original app stored a single rivalry: { p1Name, p2Name, games } */
 /* with no player ids. That shape is migrated on read into two fighters */
@@ -30,8 +35,14 @@ export function cleanName(value) {
   return value.trim().replace(/\s+/g, ' ').slice(0, NAME_MAX);
 }
 
-function validScore(v) {
+export function validScore(v) {
   return Number.isInteger(v) && v >= 0 && v <= 99;
+}
+
+/** Two teams of two: string ids, four different fighters. */
+export function validTeams(p1Ids, p2Ids) {
+  const ids = [p1Ids, p2Ids].flatMap((t) => (Array.isArray(t) && t.length === 2 ? t : [null]));
+  return ids.length === 4 && ids.every((id) => typeof id === 'string' && id) && new Set(ids).size === 4;
 }
 
 function normalizeGame(g) {
@@ -39,6 +50,13 @@ function normalizeGame(g) {
   if (!validScore(g.p1Score) || !validScore(g.p2Score)) return null;
   if (typeof g.p1Id !== 'string' || typeof g.p2Id !== 'string' || g.p1Id === g.p2Id) return null;
   return { id: g.id, createdAt: g.createdAt, p1Id: g.p1Id, p2Id: g.p2Id, p1Score: g.p1Score, p2Score: g.p2Score };
+}
+
+function normalizeDoubles(g) {
+  if (!g || typeof g.id !== 'string' || typeof g.createdAt !== 'string') return null;
+  if (!validScore(g.p1Score) || !validScore(g.p2Score)) return null;
+  if (!validTeams(g.p1Ids, g.p2Ids)) return null;
+  return { id: g.id, createdAt: g.createdAt, p1Ids: [...g.p1Ids], p2Ids: [...g.p2Ids], p1Score: g.p1Score, p2Score: g.p2Score };
 }
 
 function normalizePlayer(p) {
@@ -69,7 +87,7 @@ function migrateLegacy(data) {
   const games = (Array.isArray(d.games) ? d.games : [])
     .map((g) => normalizeGame(g && { ...g, p1Id: 'p1', p2Id: 'p2' }))
     .filter(Boolean);
-  return { players, games };
+  return { players, games, doubles: [] };
 }
 
 function normalize(data) {
@@ -77,7 +95,8 @@ function normalize(data) {
   const seen = new Set();
   const players = data.players.map(normalizePlayer).filter((p) => p && !seen.has(p.id) && seen.add(p.id));
   const games = (Array.isArray(data.games) ? data.games : []).map(normalizeGame).filter(Boolean);
-  return { players, games };
+  const doubles = (Array.isArray(data.doubles) ? data.doubles : []).map(normalizeDoubles).filter(Boolean);
+  return { players, games, doubles };
 }
 
 export async function loadState() {
@@ -110,7 +129,11 @@ export async function saveState(state) {
 
 export function publicState(state) {
   const byDate = (a, b) => new Date(a.createdAt) - new Date(b.createdAt);
-  return { players: [...state.players].sort(byDate), games: [...state.games].sort(byDate) };
+  return {
+    players: [...state.players].sort(byDate),
+    games: [...state.games].sort(byDate),
+    doubles: [...state.doubles].sort(byDate),
+  };
 }
 
 /* ---------------------------- photos ------------------------------ */

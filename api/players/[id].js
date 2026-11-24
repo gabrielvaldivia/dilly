@@ -39,12 +39,13 @@ export default route(
       const state = await loadState();
       const player = state.players.find((p) => p.id === id);
       if (!player) throw new HttpError(404, 'Fighter not found.');
-      const before = state.games.length;
+      const before = state.games.length + state.doubles.length;
       state.games = state.games.filter((g) => g.p1Id !== id && g.p2Id !== id);
+      state.doubles = state.doubles.filter((g) => !g.p1Ids.includes(id) && !g.p2Ids.includes(id));
       state.players = state.players.filter((p) => p.id !== id);
       await saveState(state);
       await deletePhoto(id, player.photo);
-      return sendJson(res, 200, { deleted: id, gamesRemoved: before - state.games.length });
+      return sendJson(res, 200, { deleted: id, gamesRemoved: before - state.games.length - state.doubles.length });
     },
   },
   'Could not update that fighter.'

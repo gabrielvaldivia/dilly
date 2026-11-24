@@ -50,8 +50,8 @@ async function fetchFighters() {
   if (!res.ok) throw new Error(`Could not load ${site}/api/state (${res.status})`);
   const index = buildIndex(await res.json());
   const withPhoto = (id) => Boolean(index.byId.get(id)?.photo);
-  const pair = rivalries(index.players, index.games).find((r) => withPhoto(r.aId) && withPhoto(r.bId));
-  const ids = pair ? [pair.aId, pair.bId] : index.players.filter((p) => p.photo).slice(0, 2).map((p) => p.id);
+  const pair = rivalries(index.players, index.games).find((r) => withPhoto(r.a[0]) && withPhoto(r.b[0]));
+  const ids = pair ? [pair.a[0], pair.b[0]] : index.players.filter((p) => p.photo).slice(0, 2).map((p) => p.id);
   if (ids.length < 2) throw new Error("Need two fighters with photos on the live site.");
   const h = headToHead(index.games, ids[0], ids[1]);
   if (h.bWins > h.aWins) ids.reverse();

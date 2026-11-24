@@ -3,6 +3,7 @@ import { FxText } from "../components/FxText.jsx";
 import { Portrait } from "../components/Portrait.jsx";
 import { PadButton, PadGlyph, SCORE_MAX, SCORE_MIN, ScoreRuler } from "../components/ScoreDial.jsx";
 import { haptic, sfx } from "../lib/sfx.js";
+import { teamName } from "../lib/stats.js";
 
 const clamp = (n) => Math.max(SCORE_MIN, Math.min(SCORE_MAX, n));
 const GAME_TO = 11;
@@ -68,7 +69,7 @@ function HealthBar({ side, value, hitKey }) {
 }
 
 /** Big score readout. Tap it to type a number directly. */
-function ScoreReadout({ side, player, score, sparks, disabled, onType }) {
+function ScoreReadout({ side, name, score, sparks, disabled, onType }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
   const tone = side === 1 ? "p1" : "p2";
@@ -88,7 +89,7 @@ function ScoreReadout({ side, player, score, sparks, disabled, onType }) {
           pattern="[0-9]*"
           enterKeyHint="done"
           autoFocus
-          aria-label={`Type ${player.name}'s score`}
+          aria-label={`Type ${name}'s score`}
           value={draft}
           onChange={(e) => setDraft(e.target.value.slice(0, 2))}
           onFocus={(e) => e.target.select()}
@@ -107,7 +108,7 @@ function ScoreReadout({ side, player, score, sparks, disabled, onType }) {
       type="button"
       disabled={disabled}
       onClick={() => { setDraft(String(score)); setEditing(true); }}
-      aria-label={`${player.name}: ${score}. Tap to type a score.`}
+      aria-label={`${name}: ${score}. Tap to type a score.`}
       className="relative flex h-[clamp(110px,30vw,210px)] w-full cursor-text flex-col items-center justify-center"
     >
       <span key={score} className="score-slam-in inline-block">
@@ -124,15 +125,16 @@ function ScoreReadout({ side, player, score, sparks, disabled, onType }) {
 }
 
 /*
- * Both fighters' faces behind the score zones, each cropped along the same
+ * Both sides' faces behind the score zones, each cropped along the same
  * slanted seam the divider line draws (top at 55%, bottom at 45%), so the
- * photos meet exactly on the line instead of at a vertical edge.
+ * photos meet exactly on the line instead of at a vertical edge. In
+ * doubles it's whoever is on point; a tag slides the partner's face in.
  */
 const SEAM_TOP = 55;
 const SEAM_BOTTOM = 45;
 const FACE_MASK = "linear-gradient(to bottom, #000 30%, transparent 88%)";
 
-function Backdrop({ a, b }) {
+function Backdrop({ a, b, tagged }) {
   const half = (side, player) => {
     const left = side === 1;
     const clip = left
@@ -145,7 +147,7 @@ function Backdrop({ a, b }) {
           className={`absolute inset-y-0 ${left ? "left-0" : "right-0"} w-[55%] opacity-30 grayscale`}
           style={{ maskImage: FACE_MASK, WebkitMaskImage: FACE_MASK }}
         >
-          <Portrait player={player} />
+          <div key={player.id} className={`h-full w-full ${tagged[side] ? `tag-swap-${left ? "l" : "r"}` : ""}`}><Portrait player={player} /></div>
         </div>
       </div>
     );
@@ -161,11 +163,39 @@ function Backdrop({ a, b }) {
   );
 }
 
-function Zone({ side, player, score, opp, combo, sparks, disabled, onBump, onJump, onDragTo, onType }) {
+/** Doubles: bring the partner in. Shows who's waiting on the apron. */
+function TagButton({ side, partner, disabled, onTag }) {
+  return (
+    <button
+      type="button"
+      onClick={() => onTag(side)}
+      disabled={disabled}
+      aria-label={`Tag in ${partner.name}`}
+      className="tag-btn mx-auto mt-5 flex max-w-full items-center gap-2.5 py-1.5 pl-2 pr-4 disabled:opacity-30 active:scale-95"
+    >
+      <span className="relative block h-9 w-7 shrink-0 overflow-hidden border-2 border-black">
+        <Portrait key={partner.id} player={partner} />
+      </span>
+      <span className="flex min-w-0 flex-col items-start">
+        <span className="font-hud text-[13px] font-semibold leading-none text-white/60">TAG IN</span>
+        <span className="font-hud mt-0.5 max-w-full truncate text-[20px] font-bold leading-none text-white">{partner.name.toUpperCase()}</span>
+      </span>
+    </button>
+  );
+}
+
+function Zone({ side, team, score, opp, combo, sparks, tagKey, disabled, onBump, onJump, onDragTo, onType, onTag }) {
   const target = winningScore(score, opp);
   const tone = side === 1 ? "p1" : "p2";
+  const name = teamName(team);
   return (
-    <section aria-label={`${player.name}'s score`} className={`zone tone-${tone} flex flex-col items-center justify-center px-3`}>
+    <section aria-label={`${name}'s score`} className={`zone tone-${tone} flex flex-col items-center justify-center px-3`}>
+
+      {tagKey > 0 && (
+        <div key={tagKey} className="tag-pop pointer-events-none absolute inset-x-0 top-[13%] z-10 flex justify-center" aria-hidden="true">
+          <FxText tone={tone} className="text-[clamp(44px,14vw,84px)]">Tag!</FxText>
+        </div>
+      )}
 
       {combo >= 2 && (
         <div key={combo} className="status-pop font-hud pointer-events-none absolute top-[12%] text-center text-[24px] font-bold text-[var(--accent)]" style={{ textShadow: "0 2px 0 #000, 0 0 16px rgba(255,160,40,.8)" }}>
@@ -174,12 +204,12 @@ function Zone({ side, player, score, opp, combo, sparks, disabled, onBump, onJum
       )}
 
       <div className="relative flex w-full max-w-[340px] flex-col items-center">
-        <ScoreReadout side={side} player={player} score={score} sparks={sparks} disabled={disabled} onType={onType} />
+        <ScoreReadout side={side} name={name} score={score} sparks={sparks} disabled={disabled} onType={onType} />
 
         <div className="mt-4 grid w-full grid-cols-2 gap-3 px-1">
-          <PadButton label={`Take a point from ${player.name}`} disabled={disabled || score <= SCORE_MIN} onPress={() => onBump(side, -1)}><PadGlyph /></PadButton>
+          <PadButton label={`Take a point from ${name}`} disabled={disabled || score <= SCORE_MIN} onPress={() => onBump(side, -1)}><PadGlyph /></PadButton>
           <PadButton
-            label={target ? `Point for ${player.name}. Hold to jump to ${target}.` : `Point for ${player.name}`}
+            label={target ? `Point for ${name}. Hold to jump to ${target}.` : `Point for ${name}`}
             disabled={disabled || score >= SCORE_MAX}
             onPress={() => onBump(side, 1)}
             onHold={target ? () => onJump(side, target) : undefined}
@@ -189,14 +219,56 @@ function Zone({ side, player, score, opp, combo, sparks, disabled, onBump, onJum
         </div>
 
         <div className="mt-5 w-full px-1">
-          <ScoreRuler value={score} label={`${player.name} score`} disabled={disabled} onDragTo={(v, first) => onDragTo(side, v, first)} />
+          <ScoreRuler value={score} label={`${name} score`} disabled={disabled} onDragTo={(v, first) => onDragTo(side, v, first)} />
         </div>
+
+        {team[1] && <TagButton side={side} partner={team[1]} disabled={disabled} onTag={onTag} />}
       </div>
     </section>
   );
 }
 
-export function MatchScreen({ a, b, initial, round, onChange, onSave, onQuit, saving, error }) {
+/**
+ * HUD portrait. In doubles the fighter on point fills it and their
+ * partner rides on the outside corner, like a tag-team assist.
+ */
+function HudFace({ side, team, tagged }) {
+  const lean = side === 1 ? "-20deg" : "20deg";
+  const [front, mate] = team;
+  return (
+    <div className={`tone-p${side} relative h-12 w-12 shrink-0`}>
+      <div className="hud-face absolute inset-0 overflow-hidden border-2 border-black shadow-[0_0_0_2px_var(--tone)]" style={{ "--lean": lean }}>
+        <div key={front.id} className={`unskew ${tagged ? "tag-in" : ""}`}><Portrait player={front} eager /></div>
+      </div>
+      {mate && (
+        <div
+          className={`hud-face absolute ${side === 1 ? "-left-2" : "-right-2"} top-[28px] h-[26px] w-[26px] overflow-hidden border-2 border-black shadow-[0_0_0_2px_var(--tone)]`}
+          style={{ "--lean": lean }}
+          aria-hidden="true"
+        >
+          <div key={mate.id} className={`unskew ${tagged ? "tag-in" : ""}`}><Portrait player={mate} /></div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** HUD name line: the fighter on point, then their partner, dimmer. */
+function HudName({ side, team }) {
+  const color = side === 1 ? "var(--p1)" : "var(--p2)";
+  return (
+    <div className={`font-hud mt-1 truncate text-[17px] font-semibold ${side === 2 ? "text-right" : ""}`} style={{ color }}>
+      {team[0].name.toUpperCase()}
+      {team[1] && <span className="text-white/55"> &amp; {team[1].name.toUpperCase()}</span>}
+    </div>
+  );
+}
+
+/**
+ * The scoreboard. `a` and `b` are teams: one fighter each in singles, two
+ * in doubles, where team[0] is on point and onTag(side) swaps the pair.
+ */
+export function MatchScreen({ a, b, initial, round, onChange, onTag, onSave, onQuit, saving, error }) {
   const [score, setScore] = useState({ s1: initial?.s1 ?? 0, s2: initial?.s2 ?? 0 });
   const [hist, setHist] = useState([]);
   const [combo, setCombo] = useState({ side: 0, n: 0 });
@@ -204,6 +276,7 @@ export function MatchScreen({ a, b, initial, round, onChange, onSave, onQuit, sa
   const [hitKey, setHitKey] = useState({ 1: 0, 2: 0 });
   const [intro, setIntro] = useState(true);
   const [quitArmed, setQuitArmed] = useState(false);
+  const [tagKey, setTagKey] = useState({ 1: 0, 2: 0 });
   const sparkId = useRef(0);
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
@@ -228,12 +301,12 @@ export function MatchScreen({ a, b, initial, round, onChange, onSave, onQuit, sa
   const lead = s1 - s2;
   const top = Math.max(s1, s2);
   const decisive = top >= GAME_TO && Math.abs(lead) >= 2;
-  const leader = lead > 0 ? a : b;
+  const leader = teamName(lead > 0 ? a : b);
   const leaderSide = lead > 0 ? 1 : 2;
   let status = null;
-  if (decisive) status = { text: `${leader.name} — K.O.!`, side: leaderSide };
-  else if (s1 >= 10 && s2 >= 10) status = lead === 0 ? { text: "DEUCE!", side: 0 } : { text: `ADVANTAGE ${leader.name}`, side: leaderSide };
-  else if (top >= 10 && lead !== 0) status = { text: `GAME POINT ${leader.name}`, side: leaderSide };
+  if (decisive) status = { text: `${leader} — K.O.!`, side: leaderSide };
+  else if (s1 >= 10 && s2 >= 10) status = lead === 0 ? { text: "DEUCE!", side: 0 } : { text: `ADVANTAGE ${leader}`, side: leaderSide };
+  else if (top >= 10 && lead !== 0) status = { text: `GAME POINT ${leader}`, side: leaderSide };
 
   const keyOf = (side) => (side === 1 ? "s1" : "s2");
   const remember = () => setHist((h) => [...h.slice(-80), score]);
@@ -302,6 +375,14 @@ export function MatchScreen({ a, b, initial, round, onChange, onSave, onQuit, sa
     haptic(6);
   };
 
+  /** Doubles tag: the partner takes point (purely for show; the score is the team's). */
+  const tag = (side) => {
+    setTagKey((k) => ({ ...k, [side]: k[side] + 1 }));
+    sfx.tag(side);
+    haptic([12, 30, 18]);
+    onTag(side);
+  };
+
   const quit = () => {
     if (s1 + s2 === 0 || quitArmed) { onQuit(); return; }
     setQuitArmed(true);
@@ -318,12 +399,10 @@ export function MatchScreen({ a, b, initial, round, onChange, onSave, onQuit, sa
       {/* HUD */}
       <header className="relative z-10 px-3 pt-[calc(env(safe-area-inset-top)+10px)]">
         <div className="flex items-center gap-2">
-          <div className="hud-face tone-p1 relative h-12 w-12 shrink-0 overflow-hidden border-2 border-black shadow-[0_0_0_2px_var(--tone)]" style={{ "--lean": "-20deg" }}>
-            <div className="unskew"><Portrait player={a} eager /></div>
-          </div>
+          <HudFace side={1} team={a} tagged={tagKey[1] > 0} />
           <div className="min-w-0 flex-1">
             <HealthBar side={1} value={hp1} hitKey={hitKey[1]} />
-            <div className="font-hud mt-1 truncate text-[17px] font-semibold" style={{ color: "var(--p1)" }}>{a.name.toUpperCase()}</div>
+            <HudName side={1} team={a} />
           </div>
           <div className="hud-badge h-12 w-[76px] shrink-0 bg-white/35 p-[2px]">
             <div className="hud-badge h-full w-full bg-black p-[2px]">
@@ -335,21 +414,19 @@ export function MatchScreen({ a, b, initial, round, onChange, onSave, onQuit, sa
           </div>
           <div className="min-w-0 flex-1 text-right">
             <HealthBar side={2} value={hp2} hitKey={hitKey[2]} />
-            <div className="font-hud mt-1 truncate text-[17px] font-semibold" style={{ color: "var(--p2)" }}>{b.name.toUpperCase()}</div>
+            <HudName side={2} team={b} />
           </div>
-          <div className="hud-face tone-p2 relative h-12 w-12 shrink-0 overflow-hidden border-2 border-black shadow-[0_0_0_2px_var(--tone)]" style={{ "--lean": "20deg" }}>
-            <div className="unskew"><Portrait player={b} eager /></div>
-          </div>
+          <HudFace side={2} team={b} tagged={tagKey[2] > 0} />
         </div>
       </header>
 
       {/* Score zones */}
       <main className="relative mt-2 grid flex-1 grid-cols-2 overflow-hidden">
-        <Backdrop a={a} b={b} />
-        <Zone side={1} player={a} score={s1} opp={s2} combo={combo.side === 1 ? combo.n : 0} sparks={sparks.filter((s) => s.side === 1)}
-          disabled={saving} onBump={bump} onJump={jump} onDragTo={dragTo} onType={typeScore} />
-        <Zone side={2} player={b} score={s2} opp={s1} combo={combo.side === 2 ? combo.n : 0} sparks={sparks.filter((s) => s.side === 2)}
-          disabled={saving} onBump={bump} onJump={jump} onDragTo={dragTo} onType={typeScore} />
+        <Backdrop a={a[0]} b={b[0]} tagged={{ 1: tagKey[1] > 0, 2: tagKey[2] > 0 }} />
+        <Zone side={1} team={a} score={s1} opp={s2} combo={combo.side === 1 ? combo.n : 0} sparks={sparks.filter((s) => s.side === 1)} tagKey={tagKey[1]}
+          disabled={saving} onBump={bump} onJump={jump} onDragTo={dragTo} onType={typeScore} onTag={tag} />
+        <Zone side={2} team={b} score={s2} opp={s1} combo={combo.side === 2 ? combo.n : 0} sparks={sparks.filter((s) => s.side === 2)} tagKey={tagKey[2]}
+          disabled={saving} onBump={bump} onJump={jump} onDragTo={dragTo} onType={typeScore} onTag={tag} />
 
         {status && (
           <div className="pointer-events-none absolute inset-x-0 top-3 flex justify-center" aria-live="polite">

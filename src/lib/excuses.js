@@ -1,6 +1,7 @@
 /* ------------------------------------------------------------------ */
 /* What the loser mumbles on the win screen, picked by how the game     */
-/* went (the celebration variant id). {w} = winner, {l} = loser.        */
+/* went (the celebration variant id). {w} = winner, {l} = loser,       */
+/* {p} = the loser's doubles partner.                                   */
 /* ------------------------------------------------------------------ */
 
 const LINES = {
@@ -34,8 +35,26 @@ const LINES = {
 
 const FALLBACK = ["Rematch. Right now. Before my body notices.", "I demand a rematch."];
 
-export function pickExcuse(variantId, winnerName, loserName) {
-  const pool = LINES[variantId] ?? FALLBACK;
+/* Doubles: half the time the loser throws their partner ({p}) under the bus. */
+const PARTNER_LINES = [
+  "That was {p}'s ball. All of them were {p}'s ball.",
+  "I was carrying {p}. Carrying is exhausting.",
+  "{p} said \"mine.\" It was not theirs.",
+  "I covered my half. {p}'s half was a crime scene.",
+  "Next time I'm picking my own partner.",
+  "{p} and I need to talk. Privately. With a mediator.",
+  "In {p}'s defense… no, I've got nothing.",
+  "Tag team? I never got tagged in.",
+  "We'd have won if {p} had shown up.",
+  "I'd like to trade {p}. For anyone.",
+];
+
+/**
+ * The loser's line. In doubles, pass the partner who stood next to them:
+ * the loser may well blame them instead of the game.
+ */
+export function pickExcuse(variantId, winnerName, loserName, partnerName = null) {
+  const pool = partnerName && Math.random() < 0.5 ? PARTNER_LINES : LINES[variantId] ?? FALLBACK;
   const line = pool[Math.floor(Math.random() * pool.length)];
-  return line.replaceAll("{w}", winnerName).replaceAll("{l}", loserName);
+  return line.replaceAll("{w}", winnerName).replaceAll("{l}", loserName).replaceAll("{p}", partnerName ?? "");
 }

@@ -176,8 +176,9 @@ const easeOutBack = (t) => 1 + 2.2 * Math.pow(t - 1, 3) + 1.2 * Math.pow(t - 1, 
  * facets. Drag in any direction to spin it freely on both axes (with
  * momentum); once it comes to rest it eases back to the nearest
  * front-facing turn so the cards are reachable. A drag never counts as a tap.
+ * `picks` maps each picked fighter's id to their side ("p1" | "p2").
  */
-export function Globe({ players, sel, onPick, onAdd }) {
+export function Globe({ players, picks, onPick, onAdd }) {
   const stageRef = useRef(null);
   const drag = useRef(null);
   const suppressClick = useRef(false);
@@ -315,7 +316,7 @@ export function Globe({ players, sel, onPick, onAdd }) {
 
         <Rig style={{ "--cols": grid.cols }}>
           {players.map((p, i) => {
-            const side = sel.p1 === p.id ? "p1" : sel.p2 === p.id ? "p2" : null;
+            const side = picks.get(p.id) ?? null;
             return (
               <Card
                 key={p.id}

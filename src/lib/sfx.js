@@ -93,6 +93,13 @@ export const sfx = {
     tone(side === 1 ? 260 : 200, { dur: 0.1, vol: 0.06, slideTo: 90 });
   },
   undo: () => tone(500, { dur: 0.08, type: "triangle", vol: 0.04, slideTo: 300 }),
+  // Tag-in: a whoosh out, then a bright two-step as the partner jumps in.
+  tag: (side = 1) => {
+    noise({ dur: 0.18, vol: 0.12, freq: side === 1 ? 2200 : 1700, q: 0.6 });
+    const base = side === 1 ? 440 : 370;
+    tone(base, { dur: 0.07, vol: 0.05, at: 0.08, slideTo: base * 1.5 });
+    tone(base * 2, { dur: 0.12, vol: 0.05, at: 0.16 });
+  },
   ko: () => {
     noise({ dur: 1.1, vol: 0.26, freq: 300, q: 0.4 });
     tone(160, { dur: 1.2, type: "sawtooth", vol: 0.08, slideTo: 30 });

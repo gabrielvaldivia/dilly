@@ -6,6 +6,7 @@ import { beatenUrl } from "../lib/api.js";
 import { ensureBeaten } from "../lib/beaten.js";
 import { pickExcuse } from "../lib/excuses.js";
 import { haptic, sfx } from "../lib/sfx.js";
+import { teamName } from "../lib/stats.js";
 
 const KO_HOLD = 1300;
 const TYPE_DELAY = 900;
@@ -65,27 +66,15 @@ function DizzyStars() {
 }
 
 /**
- * Win screen: a short K.O. slam, then the classic aftermath — the winner
- * upright, the loser knocked crooked and roughed up, and the loser's
- * excuse typed out in a dialog box.
+ * One loser, beaten up: their generated beaten-up portrait if it's ready,
+ * else drawn-on bruises now and the art swapped in once it's generated.
  */
-export function KOScreen({ winner, loser, side, s1, s2, variant, onRematch, onSelect, onRecords }) {
-  const [phase, setPhase] = useState("ko");
-  const [quote] = useState(() => pickExcuse(variant.id, winner.name, loser.name));
-  const reveal = phase === "reveal";
-  const typing = useTypewriter(quote, reveal);
-  const perfect = Math.min(s1, s2) === 0;
-  const wTone = side === 1 ? "p1" : "p2";
-  const lTone = side === 1 ? "p2" : "p1";
-  const glow = side === 1 ? "34, 211, 255" : "255, 46, 85";
-
-  // The loser's generated beaten-up portrait. If it isn't ready yet, show
-  // the drawn-on bruises now and swap the art in once it's generated.
-  const [art, setArt] = useState(() => beatenUrl(loser));
+function LoserCard({ player, tone, duo, order }) {
+  const [art, setArt] = useState(() => beatenUrl(player));
   useEffect(() => {
-    if (art || !loser.photo) return;
+    if (art || !player.photo) return;
     let live = true;
-    ensureBeaten(loser).then((p) => {
+    ensureBeaten(player).then((p) => {
       const url = p && beatenUrl(p);
       if (!url || !live) return;
       const img = new Image();
@@ -95,6 +84,56 @@ export function KOScreen({ winner, loser, side, s1, s2, variant, onRematch, onSe
     return () => { live = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  return (
+    <div
+      className={`ko-loser-in relative ${duo ? `ko-duo ko-duo-${order}` : ""}`}
+      style={{
+        "--card-w": duo ? "min(50cqw, 64cqh, 300px)" : "min(78cqw, 66cqh, 340px)",
+        width: "var(--card-w)",
+        animationDelay: `${0.15 + order * 0.22}s`,
+      }}
+    >
+      <Card player={player} tone={tone} className={`ko-beaten ${art ? "has-art" : ""}`} art={art}>
+        {!art && (
+          <>
+            <div className="beat-up pointer-events-none absolute inset-0" />
+            <span className="bandage bandage-a" aria-hidden="true" />
+            <span className="bandage bandage-b" aria-hidden="true" />
+            <svg className="pointer-events-none absolute left-0 top-0 h-1/2 w-1/2 opacity-70" viewBox="0 0 100 100" aria-hidden="true">
+              <path d="M0 18 L22 30 L30 12 L44 34 L60 26 M22 30 L18 52 M44 34 L40 60 L58 74" fill="none" stroke="#fff" strokeWidth="1.6" strokeLinejoin="bevel" />
+            </svg>
+          </>
+        )}
+        {art && <div key={art} className="shutter-flash pointer-events-none absolute inset-0 bg-white" aria-hidden="true" />}
+        <span className="ko-stamp font-display" aria-hidden="true">K.O.</span>
+      </Card>
+      <DizzyStars />
+    </div>
+  );
+}
+
+/**
+ * Win screen: a short K.O. slam, then the classic aftermath — the winners
+ * get the headline, the losers are knocked crooked and roughed up, and one
+ * loser's excuse is typed out in a dialog box. In doubles both losers go
+ * down, and whoever speaks may well blame their partner.
+ */
+export function KOScreen({ winners, losers, side, s1, s2, variant, onRematch, onRecords, onSelect }) {
+  const [phase, setPhase] = useState("ko");
+  const winnerName = teamName(winners);
+  const duo = losers.length > 1;
+  const [speaker] = useState(() => Math.floor(Math.random() * losers.length));
+  const talker = losers[speaker];
+  const partner = duo ? losers[1 - speaker] : null;
+  const [quote] = useState(() => pickExcuse(variant.id, winnerName, talker.name, partner?.name));
+  const reveal = phase === "reveal";
+  const typing = useTypewriter(quote, reveal);
+  const perfect = Math.min(s1, s2) === 0;
+  const wTone = side === 1 ? "p1" : "p2";
+  const lTone = side === 1 ? "p2" : "p1";
+  const glow = side === 1 ? "34, 211, 255" : "255, 46, 85";
+  const headline = `${winnerName} ${winners.length > 1 ? "win" : "wins"}`;
 
   useEffect(() => {
     sfx.ko();
@@ -115,7 +154,7 @@ export function KOScreen({ winner, loser, side, s1, s2, variant, onRematch, onSe
       style={{ background: `radial-gradient(80% 60% at 28% 30%, rgba(${glow}, .18), transparent 65%), linear-gradient(180deg, rgba(8,5,18,.94), rgba(4,2,10,.97))` }}
       role="dialog"
       aria-modal="true"
-      aria-label={`${winner.name} wins ${Math.max(s1, s2)} to ${Math.min(s1, s2)}. ${loser.name}: ${quote}`}
+      aria-label={`${headline} ${Math.max(s1, s2)} to ${Math.min(s1, s2)}. ${talker.name}: ${quote}`}
       onClick={() => (!reveal ? setPhase("reveal") : !typing.done && typing.finish())}
     >
       {!reveal && (
@@ -132,7 +171,7 @@ export function KOScreen({ winner, loser, side, s1, s2, variant, onRematch, onSe
         <div className="relative mx-auto flex h-full w-full max-w-[860px] flex-col items-center px-5 pb-[calc(env(safe-area-inset-bottom)+14px)] pt-[calc(env(safe-area-inset-top)+14px)]">
           {/* Result */}
           <div className="fade-up flex shrink-0 flex-col items-center text-center">
-            <FxText tone={wTone} style={{ fontSize: `min(${Math.min(14, 140 / (winner.name.length + 5))}vw, 64px)` }}>{winner.name} wins</FxText>
+            <FxText tone={wTone} style={{ fontSize: `min(${Math.min(14, 140 / headline.length)}vw, 64px)` }}>{headline}</FxText>
             <div className="mt-2 flex items-center gap-3">
               <span className="font-display text-[clamp(34px,9vw,48px)] leading-none text-[var(--accent)]" style={{ textShadow: "0 3px 0 #000" }}>
                 {Math.max(s1, s2)}–{Math.min(s1, s2)}
@@ -141,31 +180,15 @@ export function KOScreen({ winner, loser, side, s1, s2, variant, onRematch, onSe
             </div>
           </div>
 
-          {/* The loser, beaten up — the winner gets the headline, not a portrait. */}
+          {/* The losers, beaten up — the winners get the headline, not a portrait. */}
           <div className="ko-card-area relative flex min-h-0 w-full flex-1 items-center justify-center py-4">
-          <div className="ko-loser-in relative" style={{ "--card-w": "min(78cqw, 66cqh, 340px)", width: "var(--card-w)" }}>
-            <Card player={loser} tone={lTone} className={`ko-beaten ${art ? "has-art" : ""}`} art={art}>
-              {!art && (
-                <>
-                  <div className="beat-up pointer-events-none absolute inset-0" />
-                  <span className="bandage bandage-a" aria-hidden="true" />
-                  <span className="bandage bandage-b" aria-hidden="true" />
-                  <svg className="pointer-events-none absolute left-0 top-0 h-1/2 w-1/2 opacity-70" viewBox="0 0 100 100" aria-hidden="true">
-                    <path d="M0 18 L22 30 L30 12 L44 34 L60 26 M22 30 L18 52 M44 34 L40 60 L58 74" fill="none" stroke="#fff" strokeWidth="1.6" strokeLinejoin="bevel" />
-                  </svg>
-                </>
-              )}
-              {art && <div key={art} className="shutter-flash pointer-events-none absolute inset-0 bg-white" aria-hidden="true" />}
-              <span className="ko-stamp font-display" aria-hidden="true">K.O.</span>
-            </Card>
-            <DizzyStars />
-          </div>
+            {losers.map((p, i) => <LoserCard key={p.id} player={p} tone={lTone} duo={duo} order={i} />)}
           </div>
 
           {/* The excuse */}
           <div className="fade-up relative mt-3 w-full max-w-[560px] shrink-0" style={{ animationDelay: ".5s" }}>
             <span className={`tone-${lTone} font-hud absolute -top-3.5 left-4 z-10 px-2.5 pb-0.5 pt-1 text-[16px] font-bold text-black`} style={{ background: "var(--tone)", transform: "skewX(-12deg)" }}>
-              {loser.name.toUpperCase()}
+              {talker.name.toUpperCase()}
             </span>
             <div className="min-h-[84px] border-2 border-white/85 bg-black/80 px-5 pb-3 pt-5 shadow-[0_0_0_2px_#000,0_12px_40px_rgba(0,0,0,.6)]">
               <p className="font-hud text-[clamp(21px,min(5.6vw,3.4dvh),30px)] font-semibold leading-[1.08] text-white">
